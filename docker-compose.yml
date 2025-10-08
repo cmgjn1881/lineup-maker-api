@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  # MySQL 8.0 컨테이너 정의
+  mysql:
+    image: mysql:8.0
+    container_name: lineup-mysql
+    restart: always # 컨테이너가 멈추면 자동으로 다시 시작
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      # 시간대 설정 (서울)
+      TZ: Asia/Seoul
+    ports:
+      # 로컬 포트 3306과 컨테이너 포트 3306을 연결
+      - "3306:3306"
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+    volumes:
+      # 데이터 영속성을 위한 볼륨 매핑
+      - mysql-data:/var/lib/mysql
+
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+
+# 데이터 영속성을 위한 볼륨 정의
+volumes:
+  mysql-data:
