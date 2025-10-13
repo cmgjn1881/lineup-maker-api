@@ -44,18 +44,24 @@ public class JwtTokenProvider {
         this.refreshTokenValidityInSeconds = refreshTokenValidityInSeconds;
     }
 
-    public String getSubject(String token) {
-        Claims claims = Jwts.parser()
+    /**
+     * [추가/수정] 토큰에서 모든 클레임을 안전하게 추출하는 공통 메서드
+     */
+    public Claims getAllClaims(String token) {
+        return Jwts.parser()
                 .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
 
-        return claims.getSubject();
+    public String getSubject(String token) {
+        return getAllClaims(token).getSubject();
     }
 
     /**
      * 사용자 ID와 권한 정보를 담아 Access Token을 생성합니다.
+     * Access Token 생성: 'token_type: access' 클레임 추가 (Refresh Token과 구별)
      */
     public String createToken(String subject, String role) {
         long now = (new Date()).getTime();
@@ -64,17 +70,18 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .setSubject(subject) // 토큰 주체 (사용자 ID 또는 이메일)
                 .claim("role", role) // 사용자 권한 정보
+                .claim("token_type", "access") // [핵심 추가] Access Token 식별 클레임
                 .signWith(key, SignatureAlgorithm.HS256) // HS256 알고리즘과 키로 서명
                 .setExpiration(validity) // 만료 시간 설정
                 .compact();
     }
 
     /**
-     * Refresh Token을 생성합니다. (만료 시간만 다름)
+     * Refresh Token 생성: 'token_type' 클레임은 추가하지 않습니다.
      */
     public String createRefreshToken(UUID userId) {
         long now = (new Date()).getTime();
-        Date validity = new Date(now + this.refreshTokenValidityInSeconds);
+        Date validity = new Date(now + this.refreshTokenValidityInSeconds * 1000);
 
         // 리프레시 토큰에는 사용자 ID를 넣지 않고 고유 식별자(UUID)를 Subject로 사용하기도 하나,
         // 여기서는 DB에서 관리되므로, 간단하게 Subject를 비우거나 임의의 값을 사용합니다.
@@ -144,11 +151,7 @@ public class JwtTokenProvider {
      * 토큰에서 사용자 인증 정보(Authentication)를 추출합니다.
      */
     public Authentication getAuthentication(String token) {
-        Claims claims = Jwts.parser()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        Claims claims = getAllClaims(token);
 
         // 토큰에 저장된 권한 정보를 기반으로 GrantedAuthority 리스트 생성
         // 여기서는 "ROLE_USER" 권한을 가정합니다.

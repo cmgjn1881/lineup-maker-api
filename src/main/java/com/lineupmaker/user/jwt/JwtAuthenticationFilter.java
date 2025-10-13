@@ -1,5 +1,6 @@
 package com.lineupmaker.user.jwt;
 
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,23 +32,42 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 2. 토큰 유효성 검사
         if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt)) {
 
-            // [핵심 추가] 3. 블랙리스트 확인
-            // Redis에 "blacklist:[토큰]" 이라는 키가 있는지 확인
+            // 3. 블랙리스트 확인 (무효화된 Access Token 차단)
             if (redisTemplate.hasKey("blacklist:" + jwt)) {
                 // 블랙리스트에 존재하면 무효화된 토큰이므로 접근 거부
                 SecurityContextHolder.clearContext();
 
                 // 401을 반환하도록 명확히 설정합니다.
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().write("Unauthorized: This token has been invalidated.");
+                response.getWriter().write("인증 실패: 이 토큰은 무효화되었습니다.");
                 return;
             }
 
-            // 4. 유효한 토큰일 경우, Authentication 객체를 Security Context에 저장
-            Authentication authentication = jwtTokenProvider.getAuthentication(jwt);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            // 4. 토큰 타입 검증 (Refresh Token 접근 차단)
+            try {
+                Claims claims = jwtTokenProvider.getAllClaims(jwt);
+                String tokenType = claims.get("token_type", String.class);
+
+                if (!"access".equals(tokenType)) {
+                    // Access Token이 아니면 (즉, Refresh Token이면) 인증 거부
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.getWriter().write("인증 실패: Access Token만 사용할 수 있습니다.");
+                    return;
+                }
+
+                // 5. 유효한 Access Token일 경우, Authentication 객체를 Security Context에 저장
+                Authentication authentication = jwtTokenProvider.getAuthentication(jwt);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            } catch (Exception e) {
+                // 토큰 파싱 또는 클레임 추출 중 오류 발생 시
+                SecurityContextHolder.clearContext();
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("인증 실패: 토큰 구조가 유효하지 않습니다.");
+                return;
+            }
         }
-        // 4. 다음 필터로 진행
+        // 6. 다음 필터로 진행
         filterChain.doFilter(request, response);
     }
 }
