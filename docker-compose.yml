@@ -25,6 +25,15 @@ services:
 
       - ./docker/mysql/init:/docker-entrypoint-initdb.d
 
+  redis:
+    image: redis:7.2.5-alpine
+    container_name: my-spring-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis-data:/data
+    restart: always
+
 # 데이터 영속성을 위한 볼륨 정의
 volumes:
   mysql-data:

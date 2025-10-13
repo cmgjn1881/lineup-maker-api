@@ -1,44 +1,37 @@
 package com.lineupmaker.user.entity;
 
 
-import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.redis.core.RedisHash;
+import org.springframework.data.redis.core.TimeToLive;
 
-import java.time.LocalDateTime;
+import java.io.Serializable;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
-@Entity
+@RedisHash("refreshToken")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "refresh_token")
-public class RefreshToken {
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class RefreshToken implements Serializable {
 
+    // Redis의 key가 될 사용자 ID
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long tokenId;
-
-    @Column(name = "user_id", columnDefinition = "BINARY(16)", nullable = false)
     private UUID userId;
 
-    @Column(name = "token_value", unique = true, nullable = false, length = 512)
-    private String tokenValue;
+    // Redis에 저장할 토큰 값
+    private String refreshToken;
 
-    @Column(name = "expires_at", nullable = false)
-    private LocalDateTime expiresAt;
+    // 이 필드에 설정된 초 단위 값만큼 저장된 후 Redis에서 자동으로 삭제됩니다. (TTL)
+    // 리프레시 토큰 만료 시간과 일치하도록 설정 (예: 7일)
+    @TimeToLive(unit = TimeUnit.SECONDS)
+    private Long expiration;
 
-    @Builder
-    public RefreshToken(UUID userId, String tokenValue, LocalDateTime expiresAt) {
-        this.userId = userId;
-        this.tokenValue = tokenValue;
-        this.expiresAt = expiresAt;
-    }
-
-    // 토큰 값 업데이트 메서드 (재발급 시 사용 가능)
-    public void updateTokenValue(String newTokenValue, LocalDateTime newExpiresAt) {
-        this.tokenValue = newTokenValue;
-        this.expiresAt = newExpiresAt;
+    // 토큰 값 업데이트 메서드 (토큰 재발급 시 사용)
+    public void updateTokenValue(String newTokenValue, Long newExpiration) {
+        this.refreshToken = newTokenValue;
+        this.expiration = newExpiration;
     }
 }

@@ -19,13 +19,14 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtTokenProvider {
 
     private final Key key;
     private final long tokenValidityInMilliseconds;
-    private final long refreshTokenValidityInMilliseconds;
+    private final long refreshTokenValidityInSeconds;
 
     public JwtTokenProvider(
             @Value("${jwt.secret}") String secretKey,
@@ -40,7 +41,17 @@ public class JwtTokenProvider {
         this.tokenValidityInMilliseconds = tokenValidityInSeconds * 1000;
 
         // refresh_token 만료 시간 설정
-        this.refreshTokenValidityInMilliseconds = refreshTokenValidityInSeconds * 1000;
+        this.refreshTokenValidityInSeconds = refreshTokenValidityInSeconds;
+    }
+
+    public String getSubject(String token) {
+        Claims claims = Jwts.parser()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+
+        return claims.getSubject();
     }
 
     /**
@@ -61,21 +72,29 @@ public class JwtTokenProvider {
     /**
      * Refresh Token을 생성합니다. (만료 시간만 다름)
      */
-    public String createRefreshToken() {
+    public String createRefreshToken(UUID userId) {
         long now = (new Date()).getTime();
-        Date validity = new Date(now + this.refreshTokenValidityInMilliseconds);
+        Date validity = new Date(now + this.refreshTokenValidityInSeconds);
 
         // 리프레시 토큰에는 사용자 ID를 넣지 않고 고유 식별자(UUID)를 Subject로 사용하기도 하나,
         // 여기서는 DB에서 관리되므로, 간단하게 Subject를 비우거나 임의의 값을 사용합니다.
         return Jwts.builder()
+                .setSubject(userId.toString())
                 .setExpiration(validity)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // Refresh Token의 만료 시간을 LocalDateTime으로 반환하는 메서드
-    public LocalDateTime getRefreshTokenExpirationTime() {
-        return LocalDateTime.now().plusSeconds(this.refreshTokenValidityInMilliseconds / 1000);
+//    // Refresh Token의 만료 시간을 LocalDateTime으로 반환하는 메서드
+//    public LocalDateTime getRefreshTokenExpirationTime() {
+//        return LocalDateTime.now().plusSeconds(this.refreshTokenValidityInMilliseconds / 1000);
+//    }
+
+    /**
+     * [추가] Refresh Token의 만료 시간(초)를 반환하는 메서드 (Redis TTL 사용)
+     */
+    public Long getRefreshTokenExpirationSeconds() {
+        return this.refreshTokenValidityInSeconds;
     }
 
     /**

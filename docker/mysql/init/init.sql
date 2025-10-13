@@ -14,15 +14,16 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- 2. 리프레시 토큰 (refresh_token) 테이블 (users 참조)
-CREATE TABLE IF NOT EXISTS refresh_token (
-                                             token_id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                                             user_id BINARY(16) NOT NULL COMMENT '사용자 ID (FK)',
-                                             token_value VARCHAR(512) UNIQUE NOT NULL COMMENT '갱신 토큰 값',
-                                             expires_at DATETIME NOT NULL COMMENT '토큰 만료 일시',
-
-                                             FOREIGN KEY (user_id) REFERENCES users(user_id)
-                                                 ON DELETE CASCADE
-);
+-- redis 사용으로 refresh_token 테이블 제거
+# CREATE TABLE IF NOT EXISTS refresh_token (
+#                                              token_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+#                                              user_id BINARY(16) NOT NULL COMMENT '사용자 ID (FK)',
+#                                              token_value VARCHAR(512) UNIQUE NOT NULL COMMENT '갱신 토큰 값',
+#                                              expires_at DATETIME NOT NULL COMMENT '토큰 만료 일시',
+#
+#                                              FOREIGN KEY (user_id) REFERENCES users(user_id)
+#                                                  ON DELETE CASCADE
+# );
 
 -- 3. 팀 (team) 테이블 (users 참조)
 CREATE TABLE IF NOT EXISTS team (

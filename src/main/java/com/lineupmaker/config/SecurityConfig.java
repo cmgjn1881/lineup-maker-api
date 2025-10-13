@@ -1,7 +1,6 @@
 package com.lineupmaker.config;
 
 import com.lineupmaker.user.jwt.JwtAuthenticationFilter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -43,7 +42,7 @@ public class SecurityConfig {
                 // 요청에 대한 접근 권한 설정
                 .authorizeHttpRequests(auth -> auth
                         // [핵심] 회원가입 API는 인증 없이 누구나 접근 가능하도록 허용 (Permit All)
-                        .requestMatchers("/api/auth/signup", "/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/refresh").permitAll()
 
                         // 나머지 모든 요청은 인증 필요 (Authenticated)
                         .anyRequest().authenticated()

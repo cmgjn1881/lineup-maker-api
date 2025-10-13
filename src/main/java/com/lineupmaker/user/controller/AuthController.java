@@ -1,9 +1,7 @@
 package com.lineupmaker.user.controller;
 
 
-import com.lineupmaker.user.dto.LoginRequest;
-import com.lineupmaker.user.dto.LoginResponse;
-import com.lineupmaker.user.dto.SignUpRequest;
+import com.lineupmaker.user.dto.*;
 import com.lineupmaker.user.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -67,5 +65,21 @@ public class AuthController {
 
         // 여기에 도달할 일은 없지만, 안전을 위해 추가
         return ResponseEntity.status(401).body("인증되지 않은 사용자입니다.");
+    }
+
+    // Access Token 재발급 API
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshAccessToken(@RequestBody TokenRefreshRequest request) {
+        try {
+            String newAccessToken = userService.refreshAccessToken(request.getRefreshToken());
+
+            // 새 Access Token을 응답 DTO에 담아 200 OK와 함께 반환
+            TokenRefreshResponse response = new TokenRefreshResponse(newAccessToken);
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            // 유효하지 않은 리프레시 토큰일 경우 401 Unauthorized 반환
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
     }
 }

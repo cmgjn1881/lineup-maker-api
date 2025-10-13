@@ -44,6 +44,9 @@ dependencies {
 	// mysql
 	implementation 'com.mysql:mysql-connector-j'
 
+	// redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
 	// dotenv 라이브러리 추가
 	implementation 'io.github.cdimascio:dotenv-java:3.0.0'
 
