@@ -85,10 +85,27 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-//    // Refresh Token의 만료 시간을 LocalDateTime으로 반환하는 메서드
-//    public LocalDateTime getRefreshTokenExpirationTime() {
-//        return LocalDateTime.now().plusSeconds(this.refreshTokenValidityInMilliseconds / 1000);
-//    }
+    // Redis 블랙리스트 등록에 사용할 토큰의 남은 만료 시간을 가져오는 메서드
+    public Long getRemainingExpirationTime(String token) {
+        try {
+            // 1. 토큰에서 만료 시간을 추출 (Date 타입)
+            Date expiration = Jwts.parser()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getExpiration();
+
+            // 2. 현재 시간과의 차이를 계산하여 남은 시간 (밀리초) 반환
+            return expiration.getTime() - new Date().getTime();
+        } catch (ExpiredJwtException e) {
+            // 이미 만료된 토큰인 경우 남은 시간이 없으므로 0 반환
+            return 0L;
+        } catch (Exception e) {
+            // 기타 유효하지 않은 토큰인 경우 (e.g. Malformed JWT)
+            return 0L;
+        }
+    }
 
     /**
      * [추가] Refresh Token의 만료 시간(초)를 반환하는 메서드 (Redis TTL 사용)

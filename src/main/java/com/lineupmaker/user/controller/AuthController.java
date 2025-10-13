@@ -71,7 +71,9 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshAccessToken(@RequestBody TokenRefreshRequest request) {
         try {
-            String newAccessToken = userService.refreshAccessToken(request.getRefreshToken());
+            String newAccessToken = userService.refreshAccessToken(
+                    request.getRefreshToken(),
+                    request.getOldAccessToken());
 
             // 새 Access Token을 응답 DTO에 담아 200 OK와 함께 반환
             TokenRefreshResponse response = new TokenRefreshResponse(newAccessToken);

@@ -15,15 +15,16 @@ public class RedisConfig {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
 
-        // Key Serializer: String을 사용합니다.
-        template.setKeySerializer(new StringRedisSerializer());
+        // Key Serializer: String 키(블랙리스트 키)를 정확히 다룹니다.
+        StringRedisSerializer stringSerializer = new StringRedisSerializer();
+        template.setKeySerializer(stringSerializer);
 
-        // Value Serializer: JSON 형태로 저장하여 LocalDateTime 등 복잡한 객체 직렬화 문제를 해결합니다.
+        // Value Serializer: JSON 형태로 저장합니다.
         GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer();
         template.setValueSerializer(jsonSerializer);
 
-        // Hash Key 및 Value Serializer도 설정 (선택적이지만 일관성 위해)
-        template.setHashKeySerializer(new StringRedisSerializer());
+        // Hash Key/Value도 통일성을 위해 설정합니다.
+        template.setHashKeySerializer(stringSerializer);
         template.setHashValueSerializer(jsonSerializer);
 
         template.afterPropertiesSet();

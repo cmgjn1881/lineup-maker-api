@@ -9,11 +9,13 @@ import com.lineupmaker.user.jwt.JwtTokenProvider;
 import com.lineupmaker.user.repository.RefreshTokenRepository;
 import com.lineupmaker.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +26,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final RedisTemplate<String, Object> redisTemplate; // RedisTemplate 주입
 
     // 회원가입
     @Transactional
@@ -47,7 +50,7 @@ public class UserService {
         return userRepository.save(newUser);
     }
 
-    // [추가] 로그인 인증 테스트 메서드
+    // 로그인 (Access/Refresh Token 발급 및 Redis 갱신)
     @Transactional
     public LoginResponse authenticate(LoginRequest request) {
 
@@ -92,13 +95,13 @@ public class UserService {
 
     /**
      * [재발급 로직] 유효한 Refresh Token을 사용하여 새 Access Token을 발급합니다.
+     * 이전 Access Token을 블랙리스트에 등록합니다.
      */
     @Transactional
-    public String refreshAccessToken(String refreshTokenValue) {
+    public String refreshAccessToken(String refreshTokenValue, String oldAccessToken) {
 
-        // 1. Refresh Token 유효성 검 (JWT 형식 검증 및 만료 여부)
+        // 1. Refresh Token 유효성 검증
         if (!tokenProvider.validateToken(refreshTokenValue)) {
-            // 토큰이 위변조되었거나, JWT 만료 시간이 지났다면 실패(Redis TTL과 별개)
             throw new IllegalArgumentException("유효하지 않거나 만료된 Refresh Token입니다.");
         }
 
@@ -118,8 +121,23 @@ public class UserService {
             throw new IllegalArgumentException("토큰 값이 일치하지 않습니다. (탈취 의심)");
         }
 
+        // --- Access Token 블랙리스트 등록 로직 시작 ---
 
-        // 4. 사용자 정보 조회 및 새 Access Token 생성
+        // 4. [핵심] 기존 Access Token의 남은 유효 시간 계산
+        Long remainingTime = tokenProvider.getRemainingExpirationTime(oldAccessToken);
+
+        if (remainingTime > 0) {
+            // 5. [블랙리스트 등록] Redis에 "blacklist:[토큰]"을 Key로 저장하고, 남은 시간만큼 TTL 설정
+            // 해당 키가 TTL 만료 전까지는 유효성 검사에서 걸러집니다.
+            redisTemplate.opsForValue().set(
+                    "blacklist:" + oldAccessToken,
+                    userId.toString(), // 블랙리스트 값은 사용자 ID
+                    remainingTime,
+                    TimeUnit.MILLISECONDS
+            );
+        }
+
+        // 6. 사용자 정보 조회 및 새 Access Token 생성
         String userEmail = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다.")).getEmail();
 
