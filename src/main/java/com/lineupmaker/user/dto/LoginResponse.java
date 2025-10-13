@@ -6,12 +6,14 @@ import lombok.Setter;
 @Getter
 @Setter
 public class LoginResponse {
-    private String token;
+    private String accessToken;
+    private String refreshToken;
     private String email;
     // 필요한 경우 다른 사용자 정보 추가 가능
 
-    public LoginResponse(String token, String email) {
-        this.token = token;
+    public LoginResponse(String accessToken, String refreshToken, String email) {
+        this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
         this.email = email;
     }
 }

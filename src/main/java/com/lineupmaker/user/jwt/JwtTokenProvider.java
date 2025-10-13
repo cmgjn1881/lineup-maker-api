@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.security.Key;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -24,10 +25,12 @@ public class JwtTokenProvider {
 
     private final Key key;
     private final long tokenValidityInMilliseconds;
+    private final long refreshTokenValidityInMilliseconds;
 
     public JwtTokenProvider(
             @Value("${jwt.secret}") String secretKey,
-            @Value("${jwt.expiration}") long tokenValidityInSeconds) {
+            @Value("${jwt.expiration}") long tokenValidityInSeconds,
+            @Value("${jwt.refresh-expiration}") long refreshTokenValidityInSeconds) {
 
         // 시크릿 키를 Base64 디코딩하여 Key 객체 생성
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
@@ -35,6 +38,9 @@ public class JwtTokenProvider {
 
         // 초 단위를 밀리초 단위로 변환
         this.tokenValidityInMilliseconds = tokenValidityInSeconds * 1000;
+
+        // refresh_token 만료 시간 설정
+        this.refreshTokenValidityInMilliseconds = refreshTokenValidityInSeconds * 1000;
     }
 
     /**
@@ -50,6 +56,26 @@ public class JwtTokenProvider {
                 .signWith(key, SignatureAlgorithm.HS256) // HS256 알고리즘과 키로 서명
                 .setExpiration(validity) // 만료 시간 설정
                 .compact();
+    }
+
+    /**
+     * Refresh Token을 생성합니다. (만료 시간만 다름)
+     */
+    public String createRefreshToken() {
+        long now = (new Date()).getTime();
+        Date validity = new Date(now + this.refreshTokenValidityInMilliseconds);
+
+        // 리프레시 토큰에는 사용자 ID를 넣지 않고 고유 식별자(UUID)를 Subject로 사용하기도 하나,
+        // 여기서는 DB에서 관리되므로, 간단하게 Subject를 비우거나 임의의 값을 사용합니다.
+        return Jwts.builder()
+                .setExpiration(validity)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    // Refresh Token의 만료 시간을 LocalDateTime으로 반환하는 메서드
+    public LocalDateTime getRefreshTokenExpirationTime() {
+        return LocalDateTime.now().plusSeconds(this.refreshTokenValidityInMilliseconds / 1000);
     }
 
     /**
