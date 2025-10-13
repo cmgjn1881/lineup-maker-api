@@ -38,3 +38,10 @@ out/
 
 # Environment files
 .env
+
+# Docker Data Volumes
+# 컨테이너가 생성하는 DB 데이터는 커밋하지 않습니다.
+postgres-data/
+redis-data/
+# redis-data/dump.rdb 파일도 이미 포함되어 있을 가능성이 높지만,
+# 폴더 자체를 무시하면 됩니다.

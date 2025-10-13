@@ -1,6 +1,7 @@
 package com.lineupmaker.user.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,14 +12,15 @@ import java.util.UUID;
 
 @Entity
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "users")
 public class Users {
 
     @Id
-    @GeneratedValue(generator = "uuid2")
-    @GenericGenerator(name = "uuid2", strategy = "uuid2")
-    @Column(name = "user_id", columnDefinition = "BINARY(16)")
+    // [변경] PostgreSQL은 UUID 생성을 DB에 맡기거나 코드로 처리합니다.
+    // UUID 생성을 위한 @GenericGenerator 설정 제거
+    @GeneratedValue(strategy = GenerationType.UUID) // JPA 3.1부터 제공되는 UUID 생성 전략
+    @Column(name = "user_id") // columnDefinition 제거 (기본 UUID 타입 사용)
     private UUID userId;
 
     @Column(unique = true, nullable = false)
