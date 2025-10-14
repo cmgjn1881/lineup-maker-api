@@ -23,6 +23,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+
+        // 토큰 검증이 필요 없는 경로를 지정합니다.
+        // SecurityConfig의 permitAll() 경로와 일치해야 합니다.
+        return path.startsWith("/api/auth/signup") ||
+                path.startsWith("/api/auth/login") ||
+                path.startsWith("/api/auth/refresh") ||
+                path.startsWith("/api/auth/logout");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
@@ -37,6 +49,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // 블랙리스트에 존재하면 무효화된 토큰이므로 접근 거부
                 SecurityContextHolder.clearContext();
 
+                // 응답의 인코딩과 Content Type을 명시적으로 설정
+                response.setContentType("application/json;charset=UTF-8"); // JSON 형식과 UTF-8 명시
+
                 // 401을 반환하도록 명확히 설정합니다.
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("인증 실패: 이 토큰은 무효화되었습니다.");
@@ -50,6 +65,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 if (!"access".equals(tokenType)) {
                     // Access Token이 아니면 (즉, Refresh Token이면) 인증 거부
+                    response.setContentType("application/json;charset=UTF-8");
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.getWriter().write("인증 실패: Access Token만 사용할 수 있습니다.");
                     return;

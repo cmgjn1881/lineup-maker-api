@@ -84,4 +84,21 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         }
     }
+
+    /**
+     * 로그아웃 API (POST /api/auth/logout)
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestBody LogoutRequest request) {
+        try {
+            userService.logout(request.getRefreshToken(), request.getAccessToken());
+
+            // [핵심 수정] 204 No Content를 반환하여 REST 표준을 따릅니다.
+            return ResponseEntity.noContent().build();
+
+        } catch (Exception e) {
+            // 토큰 파싱 오류 등이 발생해도 400 Bad Request로 처리
+            return ResponseEntity.badRequest().build(); // 204 대신 400 에러를 반환하여 실패를 알림
+        }
+    }
 }

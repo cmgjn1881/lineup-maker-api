@@ -4,6 +4,8 @@ import com.lineupmaker.user.jwt.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -12,6 +14,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
@@ -24,6 +27,20 @@ public class SecurityConfig {
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         // this.passwordEncoder 필드 초기화 구문이 없어졌습니다.
+    }
+
+    /**
+     * 특정 경로에 대해 Security Filter Chain을 완전히 무시하도록 설정
+     * CSRF 및 모든 보안 검사를 우회하여 403 문제를 해결합니다.
+     */
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring().requestMatchers(
+                "/api/auth/signup",
+                "/api/auth/login",
+                "/api/auth/refresh",
+                "/api/auth/logout" // 로그아웃 경로를 Security 필터에서 완전히 제외
+        );
     }
 
     // 2. HTTP 보안 필터 체인 설정 (핵심!)
@@ -41,9 +58,6 @@ public class SecurityConfig {
 
                 // 요청에 대한 접근 권한 설정
                 .authorizeHttpRequests(auth -> auth
-                        // [핵심] 회원가입 API는 인증 없이 누구나 접근 가능하도록 허용 (Permit All)
-                        .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/refresh").permitAll()
-
                         // 나머지 모든 요청은 인증 필요 (Authenticated)
                         .anyRequest().authenticated()
                 )

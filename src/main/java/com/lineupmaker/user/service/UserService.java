@@ -127,11 +127,12 @@ public class UserService {
         Long remainingTime = tokenProvider.getRemainingExpirationTime(oldAccessToken);
 
         if (remainingTime > 0) {
+            String userSubject = tokenProvider.getSubject(oldAccessToken);
             // 5. [블랙리스트 등록] Redis에 "blacklist:[토큰]"을 Key로 저장하고, 남은 시간만큼 TTL 설정
             // 해당 키가 TTL 만료 전까지는 유효성 검사에서 걸러집니다.
             redisTemplate.opsForValue().set(
                     "blacklist:" + oldAccessToken,
-                    userId.toString(), // 블랙리스트 값은 사용자 ID
+                    userSubject, // 블랙리스트 값은 사용자 ID
                     remainingTime,
                     TimeUnit.MILLISECONDS
             );
@@ -141,11 +142,52 @@ public class UserService {
         String userEmail = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다.")).getEmail();
 
-        String newAccessToken = tokenProvider.createToken(userEmail, "USER");
-
         // 5. Redis의 TTL이 자동으로 갱신되므로 여기서는 추가 갱신 로직 생략 가능
 
-        return newAccessToken;
+        return tokenProvider.createToken(userEmail, "USER");
+    }
+
+    @Transactional
+    public void logout(String refreshTokenValue, String accessTokenValue) {
+
+        // 1. [Access Token 무효화] 블랙리스트 등록
+        try {
+            Long remainingTime = tokenProvider.getRemainingExpirationTime(accessTokenValue); // 남은 유효 시간 계산
+
+            if (remainingTime > 0) {
+
+                // [핵심 수정] UUID 변환 제거! Subject(이메일)를 String으로 바로 사용합니다.
+                String userSubject = tokenProvider.getSubject(accessTokenValue);
+
+                redisTemplate.opsForValue().set(
+                        "blacklist:" + accessTokenValue,
+                        userSubject, // [수정] String (이메일) 그대로 사용
+                        remainingTime,
+                        TimeUnit.MILLISECONDS
+                );
+            } else {
+                // 토큰이 이미 만료되었거나 유효하지 않아 등록을 건너뜁니다.
+                System.err.println("JWT 정보: Access Token이 이미 만료되었거나 유효하지 않아 블랙리스트 등록을 건너뜁니다.");
+            }
+        } catch (Exception e) {
+            // 파싱 오류 발생 시: 경고 로그만 남깁니다. (이미 만료되었을 가능성이 높음)
+            System.err.println("JWT 경고: Access Token 블랙리스트 등록 중 심각한 파싱 오류. " + e.getMessage());
+        }
+
+        // 2. [Refresh Token 삭제] Redis에서 Refresh Token 삭제 (재발급 권한 제거)
+        if (!tokenProvider.validateToken(refreshTokenValue)) {
+            System.err.println("JWT 경고: 로그아웃 요청 Refresh Token이 유효하지 않습니다.");
+            return;
+        }
+
+        try {
+            // [참고] Refresh Token의 Subject는 UUID이므로, 여기서 UUID.fromString을 사용하는 것은 올바릅니다.
+            UUID userId = UUID.fromString(tokenProvider.getSubject(refreshTokenValue));
+            refreshTokenRepository.deleteById(userId);
+
+        } catch (Exception e) {
+            System.err.println("Redis 경고: Refresh Token 삭제 중 오류 발생. " + e.getMessage());
+        }
     }
 
     public Users findByEmail(String email) {

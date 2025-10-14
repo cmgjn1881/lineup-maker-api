@@ -14,8 +14,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import javax.crypto.SecretKey;
 import java.security.Key;
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -44,15 +44,29 @@ public class JwtTokenProvider {
         this.refreshTokenValidityInSeconds = refreshTokenValidityInSeconds;
     }
 
+    private JwtParser createParser() {
+        return Jwts.parser()
+                .verifyWith((SecretKey) this.key) // Key를 SecretKey로 캐스팅하여 검증
+                .build();
+    }
+
+    private Jws<Claims> parseToken(String token) {
+        return createParser().parseSignedClaims(token); // parseSignedClaims 사용
+    }
+
     /**
-     * [추가/수정] 토큰에서 모든 클레임을 안전하게 추출하는 공통 메서드
+     * 토큰에서 모든 클레임을 안전하게 추출하는 공통 메서드
      */
     public Claims getAllClaims(String token) {
-        return Jwts.parser()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        try {
+            return parseToken(token).getPayload();
+        } catch (ExpiredJwtException e) {
+            // 만료된 토큰의 클레임 정보를 가져와서 남은 시간 계산에 사용
+            return e.getClaims();
+        } catch (Exception e) {
+            // 서명 오류, 형식 오류 등 다른 예외 발생 시
+            throw new JwtException("토큰 파싱 중 오류 발생: " + e.getMessage());
+        }
     }
 
     public String getSubject(String token) {
@@ -68,11 +82,11 @@ public class JwtTokenProvider {
         Date validity = new Date(now + this.tokenValidityInMilliseconds);
 
         return Jwts.builder()
-                .setSubject(subject) // 토큰 주체 (사용자 ID 또는 이메일)
-                .claim("role", role) // 사용자 권한 정보
-                .claim("token_type", "access") // [핵심 추가] Access Token 식별 클레임
-                .signWith(key, SignatureAlgorithm.HS256) // HS256 알고리즘과 키로 서명
-                .setExpiration(validity) // 만료 시간 설정
+                .subject(subject)
+                .claim("role", role)
+                .claim("token_type", "access")
+                .signWith(this.key) // Key 객체 사용
+                .expiration(validity) // expiration() 사용
                 .compact();
     }
 
@@ -86,36 +100,32 @@ public class JwtTokenProvider {
         // 리프레시 토큰에는 사용자 ID를 넣지 않고 고유 식별자(UUID)를 Subject로 사용하기도 하나,
         // 여기서는 DB에서 관리되므로, 간단하게 Subject를 비우거나 임의의 값을 사용합니다.
         return Jwts.builder()
-                .setSubject(userId.toString())
-                .setExpiration(validity)
-                .signWith(key, SignatureAlgorithm.HS256)
+                .subject(userId.toString())
+                .expiration(validity)
+                .signWith(this.key)
                 .compact();
     }
 
     // Redis 블랙리스트 등록에 사용할 토큰의 남은 만료 시간을 가져오는 메서드
     public Long getRemainingExpirationTime(String token) {
         try {
-            // 1. 토큰에서 만료 시간을 추출 (Date 타입)
-            Date expiration = Jwts.parser()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody()
-                    .getExpiration();
+            // parseToken 메서드를 사용하여 안정적으로 만료 시간을 추출
+            Claims claims = getAllClaims(token);
+            Date expiration = claims.getExpiration();
 
-            // 2. 현재 시간과의 차이를 계산하여 남은 시간 (밀리초) 반환
-            return expiration.getTime() - new Date().getTime();
-        } catch (ExpiredJwtException e) {
-            // 이미 만료된 토큰인 경우 남은 시간이 없으므로 0 반환
-            return 0L;
+            // 현재 시간과의 차이를 계산하여 남은 시간 (밀리초) 반환
+            // 음수일 경우 0을 반환하도록 처리
+            long remaining = expiration.getTime() - new Date().getTime();
+            return Math.max(0L, remaining);
+
         } catch (Exception e) {
-            // 기타 유효하지 않은 토큰인 경우 (e.g. Malformed JWT)
+            // 서명이 잘못된 토큰 등 유효하지 않은 토큰은 0 반환
             return 0L;
         }
     }
 
     /**
-     * [추가] Refresh Token의 만료 시간(초)를 반환하는 메서드 (Redis TTL 사용)
+     * Refresh Token의 만료 시간(초)를 반환하는 메서드 (Redis TTL 사용)
      */
     public Long getRefreshTokenExpirationSeconds() {
         return this.refreshTokenValidityInSeconds;
@@ -127,9 +137,9 @@ public class JwtTokenProvider {
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
-                    .setSigningKey(key) // 시크릿 키로 토큰 파싱 시도
+                    .verifyWith((SecretKey) key) // 시크릿 키로 토큰 파싱 시도
                     .build()
-                    .parseClaimsJws(token);
+                    .parseSignedClaims(token);
             return true;
         } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
             // 잘못된 JWT 서명입니다.
