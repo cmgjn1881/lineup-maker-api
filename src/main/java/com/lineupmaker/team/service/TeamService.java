@@ -1,6 +1,7 @@
 package com.lineupmaker.team.service;
 
 import com.lineupmaker.team.dto.TeamCreateRequest;
+import com.lineupmaker.team.dto.TeamUpdateRequest;
 import com.lineupmaker.team.entity.Team;
 import com.lineupmaker.team.repository.TeamRepository;
 import com.lineupmaker.user.entity.Users;
@@ -40,5 +41,42 @@ public class TeamService {
 
     public List<Team> getTeamsByOwner(UUID ownerId) {
         return teamRepository.findByOwnerUserId(ownerId);
+    }
+
+    // 특정 팀 수정
+    @Transactional
+    public Team updateTeam(Long teamId, TeamUpdateRequest request, UUID ownerId) {
+
+        // 1. 팀 조회 (없으면 404)
+        Team teamToUpdate = teamRepository.findById(teamId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 팀 ID입니다: " + teamId));
+
+        // 2. [핵심 보안 검증] 요청한 사용자가 팀의 소유자인지 확인
+        if (!teamToUpdate.getOwner().getUserId().equals(ownerId)) {
+            throw new IllegalArgumentException("팀을 수정할 권한이 없습니다. (소유자만 가능)");
+        }
+
+        // 3. 팀 이름 변경 (Team 엔티티에 setter 또는 변경 메서드 필요)
+        teamToUpdate.updateName(request.newName()); // 엔티티 메서드 호출
+
+        // 4. JPA의 Dirty Checking으로 자동 저장되지만, 명시적으로 save 가능
+        return teamRepository.save(teamToUpdate);
+    }
+
+    // 특정 팀 삭제
+    @Transactional
+    public void deleteTeam(Long teamId, UUID ownerId) {
+
+        // 1. 팀 조회 (없으면 404)
+        Team teamToUpdate = teamRepository.findById(teamId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 팀 ID입니다: " + teamId));
+
+        // 2. [핵심 보안 검증] 요청한 사용자가 팀의 소유자인지 확인
+        if (!teamToUpdate.getOwner().getUserId().equals(ownerId)) {
+            throw new IllegalArgumentException("팀을 수정할 권한이 없습니다. (소유자만 가능)");
+        }
+
+        // 3. 팀 삭제
+        teamRepository.deleteById(teamId);
     }
 }

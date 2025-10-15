@@ -37,4 +37,9 @@ public class Team {
         this.name = name;
         this.createdAt = LocalDateTime.now();
     }
+
+    // 팀 이름 변경 메서드(Dirty Checking 활용)
+    public void updateName(String newName){
+        this.name = newName;
+    }
 }
