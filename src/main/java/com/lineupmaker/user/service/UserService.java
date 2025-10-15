@@ -190,6 +190,40 @@ public class UserService {
         }
     }
 
+    @Transactional
+    public void withdrawUser(String userEmail, String accessTokenValue) {
+
+        // 1. 사용자 엔티티 조회 (삭제할 대상 확인)
+        Users userToDelete = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("탈퇴할 사용자를 찾을 수 없습니다."));
+
+        UUID userId = userToDelete.getUserId();
+
+        // 2. Refresh Token 정리 (Redis에서 삭제)
+        // ON DELETE CASCADE를 사용하지만, Redis는 수동으로 정리해야 함
+        refreshTokenRepository.deleteById(userId);
+
+        // 3. Access Token 무효화
+        // 블랙리스트로 무효화 처리
+        Long remainingTime = tokenProvider.getRemainingExpirationTime(accessTokenValue);
+
+        if (remainingTime > 0) {
+            String userSubject = tokenProvider.getSubject(accessTokenValue);
+            // 5. [블랙리스트 등록] Redis에 "blacklist:[토큰]"을 Key로 저장하고, 남은 시간만큼 TTL 설정
+            // 해당 키가 TTL 만료 전까지는 유효성 검사에서 걸러집니다.
+            redisTemplate.opsForValue().set(
+                    "blacklist:" + accessTokenValue,
+                    userSubject, // 블랙리스트 값은 사용자 ID
+                    remainingTime,
+                    TimeUnit.MILLISECONDS
+            );
+        }
+
+
+        // 4. DB 사용자 삭제
+        userRepository.delete(userToDelete);
+    }
+
     public Users findByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));

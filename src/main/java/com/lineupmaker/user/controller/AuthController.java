@@ -2,21 +2,27 @@ package com.lineupmaker.user.controller;
 
 
 import com.lineupmaker.user.dto.*;
+import com.lineupmaker.user.jwt.JwtTokenProvider;
 import com.lineupmaker.user.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Objects;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
     private final UserService userService;
+    private final JwtTokenProvider tokenProvider;
 
-    public AuthController(UserService userService) {
+    public AuthController(UserService userService, JwtTokenProvider tokenProvider) {
         this.userService = userService;
+        this.tokenProvider = tokenProvider;
     }
 
     // 회원가입 API (POST /api/auth/signup)
@@ -100,5 +106,24 @@ public class AuthController {
             // 토큰 파싱 오류 등이 발생해도 400 Bad Request로 처리
             return ResponseEntity.badRequest().build(); // 204 대신 400 에러를 반환하여 실패를 알림
         }
+    }
+
+    /**
+     * 회원 탈퇴 API (DELETE /api/auth/withdraw)
+     * - Access Token을 통해 인증된 사용자만 접근 가능
+     */
+    @DeleteMapping("/withdraw")
+    public ResponseEntity<Void> withdraw(Authentication authentication, HttpServletRequest request) {
+
+        // 1. Security Context에서 사용자 이메일 (Subject) 추출
+        String userEmail = ((UserDetails) authentication.getPrincipal()).getUsername();
+        String accessTokenValue = tokenProvider.resolveToken(request);
+
+        // 2. 서비스 로직 호출 (탈퇴 및 데이터 정리)
+        // Access Token이 없으면 탈퇴 처리만 진행하고 경고를 남김 (refresh token은 무효화됨)
+        userService.withdrawUser(userEmail, Objects.requireNonNullElse(accessTokenValue, ""));
+
+        // 3. 204 No Content 반환 (RESTful 표준: 리소스 성공적 삭제)
+        return ResponseEntity.noContent().build();
     }
 }
