@@ -7,8 +7,12 @@ CREATE TABLE IF NOT EXISTS users (
                                      password VARCHAR(60) NOT NULL,
                                      username VARCHAR(50) NOT NULL,
                                      is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+                                     email_check_token VARCHAR(36),
+                                     token_expiry_date TIMESTAMP WITHOUT TIME ZONE,
                                      created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX idx_email_check_token ON users (email_check_token);
 
 -- 2. 팀 (team) 테이블 (users 참조)
 CREATE TABLE IF NOT EXISTS team (

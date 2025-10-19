@@ -14,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -28,26 +29,96 @@ public class UserService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final RedisTemplate<String, Object> redisTemplate; // RedisTemplate 주입
 
-    // 회원가입
+    private final EmailService emailService;
+
+    // Redis Key Prefix (인증 코드를 임시 저장하는 키)
+    private static final String EMAIL_VERIFICATION_PREFIX = "VERIFY_CODE:";
+    private static final long VERIFICATION_CODE_TTL_MINUTES = 5; // 코드 유효 시간 5분
+
+    // 💡 6자리 인증 코드를 생성하는 유틸리티 메서드
+    private String generateVerificationCode() {
+        Random random = new Random();
+        int code = 100000 + random.nextInt(900000); // 100000 ~ 999999
+        return String.valueOf(code);
+    }
+
+    /**
+     * 💡 [새로운 API] Step 1: 인증 코드를 생성하고 이메일로 발송합니다. (DB 저장 X)
+     */
     @Transactional
-    public Users signUp(SignUpRequest request) { // 반환 타입은 Users
-        // 1. 이메일 중복 확인
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+    public void sendVerificationCode(String email) {
+        // 1. 이미 최종 가입된 사용자인지 확인
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("이미 가입된 이메일입니다. 로그인해 주세요.");
         }
 
-        // 2. 비밀번호 암호화 (핵심!)
+        // 2. 6자리 인증 코드 생성
+        String code = generateVerificationCode();
+        String redisKey = EMAIL_VERIFICATION_PREFIX + email;
+
+        // 3. Redis에 코드 저장 (유효 시간 5분 설정)
+        redisTemplate.opsForValue().set(
+                redisKey,
+                code,
+                VERIFICATION_CODE_TTL_MINUTES,
+                TimeUnit.MINUTES
+        );
+
+        // 4. 이메일 발송
+        try {
+            emailService.sendVerificationCodeEmail(email, code);
+        } catch (RuntimeException e) {
+            // 이메일 전송 실패 시 Redis의 임시 코드도 삭제하는 것이 안전할 수 있습니다.
+            redisTemplate.delete(redisKey);
+            throw new RuntimeException("이메일 전송에 실패했습니다. 이메일 주소를 확인하거나 잠시 후 다시 시도해 주세요.", e);
+        }
+    }
+
+    /**
+     * 💡 Step 2: 최종 회원가입 및 코드 검증
+     * 인증 코드와 함께 모든 정보를 제출하여 DB에 최종 저장하는 단계입니다.
+     */
+    @Transactional
+    public Users signUp(SignUpRequest request) { // 반환 타입은 Users
+
+        String email = request.getEmail();
+        String code = request.getVerificationCode();
+        String redisKey = EMAIL_VERIFICATION_PREFIX + email;
+
+        // 2. Redis에서 인증 코드 조회
+        Object storedCodeObject = redisTemplate.opsForValue().get(redisKey);
+
+        if (storedCodeObject == null) {
+            throw new IllegalArgumentException("인증 코드가 만료되었거나 발송되지 않았습니다. 코드를 다시 요청해주세요.");
+        }
+
+        String storedCode = storedCodeObject.toString();
+
+        // 3. 코드 일치 확인
+        if (!storedCode.equals(code)) {
+            throw new IllegalArgumentException("인증 코드가 일치하지 않습니다.");
+        }
+
+        // --- 인증 성공: 최종 DB 저장 및 Redis 코드 삭제 ---
+
+        // 4. 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(request.getPassword());
 
-        // 3. Users Entity 생성
+        // 5. Users Entity 생성 및 저장 (isVerified = TRUE)
         Users newUser = Users.builder()
-                .email(request.getEmail())
-                .password(encodedPassword) // 암호화된 비밀번호 저장
+                .email(email)
+                .password(encodedPassword)
                 .username(request.getUsername())
                 .build();
 
-        // 4. DB에 저장 후 저장된 객체 반환
-        return userRepository.save(newUser);
+        newUser.completeVerification();
+
+        Users savedUser = userRepository.save(newUser);
+
+        // 6. Redis의 임시 코드 삭제
+        redisTemplate.delete(redisKey);
+
+        return savedUser;
     }
 
     // 로그인 (Access/Refresh Token 발급 및 Redis 갱신)
@@ -64,10 +135,15 @@ public class UserService {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
 
-        // 3. 인증 성공 시 Access Token 생성 (Role은 DB에서 가져와 사용)
+        // 💡 [핵심 추가] 3. 이메일 인증 여부 확인
+        if (!users.getIsVerified()) {
+            throw new IllegalArgumentException("이메일 인증이 완료되지 않은 계정입니다. 메일함을 확인하거나 재전송을 요청해주세요.");
+        }
+
+        // 4. 인증 성공 시 Access Token 생성 (Role은 DB에서 가져와 사용)
         String accessToken = tokenProvider.createToken(users.getEmail(), "USER");
 
-        // 4. Refresh Token 생성 시 UUID 전달
+        // 5. Refresh Token 생성 시 UUID 전달
         String refreshTokenValue = tokenProvider.createRefreshToken(users.getUserId()); // [수정] UUID 전달
         Long expirationSeconds = tokenProvider.getRefreshTokenExpirationSeconds();
 

@@ -31,7 +31,7 @@ public class FormationController {
 
     /**
      * 포메이션 생성 및 선수 배치 API
-     * POST /api/formations
+     * POST /api/formation
      */
     @PostMapping
     public ResponseEntity<Long> createFormation(
@@ -51,7 +51,7 @@ public class FormationController {
 
     /**
      * 포메이션 상세 조회 API
-     * GET /api/formations/{formationId}
+     * GET /api/formation/{formationId}
      */
     @GetMapping("/{formationId}")
     public ResponseEntity<FormationResponse> getFormation(
@@ -70,7 +70,7 @@ public class FormationController {
 
     /**
      * 포메이션 수정 API (이름 및 배치 정보 전체 수정)
-     * PUT /api/formations/{formationId}
+     * PUT /api/formation/{formationId}
      */
     @PutMapping("/{formationId}")
     public ResponseEntity<Long> updateFormation(
@@ -90,7 +90,7 @@ public class FormationController {
 
     /**
      * 포메이션 삭제 API
-     * DELETE /api/formations/{formationId}
+     * DELETE /api/formation/{formationId}
      */
     @DeleteMapping("/{formationId}")
     public ResponseEntity<Void> deleteFormation(

@@ -25,15 +25,34 @@ public class AuthController {
         this.tokenProvider = tokenProvider;
     }
 
+    // 💡 [새로운 API] Step 1: 이메일만 입력받아 인증 코드를 요청하고 발송
+    @PostMapping("/send-code")
+    public ResponseEntity<String> sendCode(@RequestBody EmailRequest request) {
+        try {
+            userService.sendVerificationCode(request.getEmail());
+            return ResponseEntity.ok("인증 코드가 이메일로 발송되었습니다. 5분 내로 코드를 입력해주세요.");
+        } catch (IllegalArgumentException e) {
+            // 이미 가입된 이메일 등 오류
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            // 이메일 전송 실패
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
     // 회원가입 API (POST /api/auth/signup)
     @PostMapping("/signup")
     public ResponseEntity<String> signUp(@RequestBody SignUpRequest request) {
         try {
             userService.signUp(request);
-            return ResponseEntity.ok("회원가입이 성공적으로 완료되었습니다.");
+            // 💡 [수정 완료] 인증 코드 검증 후 최종 DB 저장이 성공했으므로, 최종 성공 메시지를 반환합니다.
+            return ResponseEntity.ok("회원가입이 최종 완료되었습니다! 이제 로그인할 수 있습니다.");
         } catch (IllegalArgumentException e) {
-            // 이메일 중복 등 오류 발생 시 400 Bad Request 응답
+            // 코드 불일치, 코드 만료, 이메일 중복 등 오류
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            // 서버 오류 (예: Redis 연결 문제)
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("회원가입 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
 

@@ -142,11 +142,14 @@ public class JwtTokenProvider {
                     .parseSignedClaims(token);
             return true;
         } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
-            // 잘못된 JWT 서명입니다.
-            System.err.println("Invalid JWT signature: " + e.getMessage());
+            // 잘못된 서명, 형식 오류는 인증 실패 (401 처리를 위해 던집니다.)
+            System.err.println("Invalid JWT signature or format: " + e.getMessage());
+            throw e; // 🔑 SecurityException 또는 MalformedJwtException도 401 처리를 위해 던져야 합니다.
         } catch (ExpiredJwtException e) {
-            // 만료된 JWT 토큰입니다.
+            // 만료된 JWT 토큰입니다. 이 예외는 Access Token 재발급의 트리거가 됩니다.
+            // 클레임 추출은 getAllClaims()에서 처리하므로 여기서는 예외를 던집니다.
             System.err.println("Expired JWT token: " + e.getMessage());
+            throw e; // 🔑 401 처리를 위해 예외를 다시 던집니다.
         } catch (UnsupportedJwtException e) {
             // 지원되지 않는 JWT 토큰입니다.
             System.err.println("Unsupported JWT token: " + e.getMessage());
