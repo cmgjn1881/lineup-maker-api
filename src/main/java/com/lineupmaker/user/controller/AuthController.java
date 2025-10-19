@@ -40,6 +40,19 @@ public class AuthController {
         }
     }
 
+    // 2. 코드 검증 및 플래그 저장 (Step 2: POST /api/auth/verify-code)
+    @PostMapping("/verify-code")
+    public ResponseEntity<String> verifyCode(@RequestBody CodeVerificationRequest request) {
+        try {
+            // Redis에 코드 검증 후, 최종 가입을 허용하는 플래그를 저장
+            userService.verifyCodeAndSetFlag(request);
+            return ResponseEntity.ok("이메일 인증이 완료되었습니다. 이제 회원가입을 계속 진행해주세요.");
+        } catch (IllegalArgumentException e) {
+            // 코드 불일치, 코드 만료 등 오류
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     // 회원가입 API (POST /api/auth/signup)
     @PostMapping("/signup")
     public ResponseEntity<String> signUp(@RequestBody SignUpRequest request) {

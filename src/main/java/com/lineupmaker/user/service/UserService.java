@@ -1,5 +1,6 @@
 package com.lineupmaker.user.service;
 
+import com.lineupmaker.user.dto.CodeVerificationRequest;
 import com.lineupmaker.user.dto.LoginRequest;
 import com.lineupmaker.user.dto.LoginResponse;
 import com.lineupmaker.user.dto.SignUpRequest;
@@ -31,9 +32,12 @@ public class UserService {
 
     private final EmailService emailService;
 
+    private static final String EMAIL_CODE_PREFIX = "EMAIL_CODE:";
+
     // Redis Key Prefix (인증 코드를 임시 저장하는 키)
-    private static final String EMAIL_VERIFICATION_PREFIX = "VERIFY_CODE:";
+    private static final String VERIFIED_EMAIL_PREFIX = "VERIFIED_EMAIL:";
     private static final long VERIFICATION_CODE_TTL_MINUTES = 5; // 코드 유효 시간 5분
+    private static final long VERIFICATION_FLAG_TTL_MINUTES = 30;
 
     // 💡 6자리 인증 코드를 생성하는 유틸리티 메서드
     private String generateVerificationCode() {
@@ -54,11 +58,11 @@ public class UserService {
 
         // 2. 6자리 인증 코드 생성
         String code = generateVerificationCode();
-        String redisKey = EMAIL_VERIFICATION_PREFIX + email;
+        String redisCodeKey = EMAIL_CODE_PREFIX + email;
 
         // 3. Redis에 코드 저장 (유효 시간 5분 설정)
         redisTemplate.opsForValue().set(
-                redisKey,
+                redisCodeKey,
                 code,
                 VERIFICATION_CODE_TTL_MINUTES,
                 TimeUnit.MINUTES
@@ -69,10 +73,42 @@ public class UserService {
             emailService.sendVerificationCodeEmail(email, code);
         } catch (RuntimeException e) {
             // 이메일 전송 실패 시 Redis의 임시 코드도 삭제하는 것이 안전할 수 있습니다.
-            redisTemplate.delete(redisKey);
+            redisTemplate.delete(redisCodeKey);
             throw new RuntimeException("이메일 전송에 실패했습니다. 이메일 주소를 확인하거나 잠시 후 다시 시도해 주세요.", e);
         }
     }
+
+    @Transactional
+    public void verifyCodeAndSetFlag(CodeVerificationRequest request) {
+        String email = request.getEmail();
+        String code = request.getVerificationCode();
+        String redisCodeKey = EMAIL_CODE_PREFIX + email;
+        String redisFlagKey = VERIFIED_EMAIL_PREFIX + email;
+
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("이미 가입된 이메일입니다. 로그인해 주세요.");
+        }
+
+        Object storedCodeObject = redisTemplate.opsForValue().get(redisCodeKey);
+        if (storedCodeObject == null) {
+            throw new IllegalArgumentException("인증 코드가 만료되었거나 발송되지 않았습니다. 코드를 다시 요청해주세요.");
+        }
+        String storedCode = storedCodeObject.toString();
+
+        if (!storedCode.equals(code)) {
+            throw new IllegalArgumentException("인증 코드가 일치하지 않습니다.");
+        }
+
+        redisTemplate.delete(redisCodeKey);
+
+        redisTemplate.opsForValue().set(
+                redisFlagKey,
+                "verified",
+                VERIFICATION_FLAG_TTL_MINUTES,
+                TimeUnit.MINUTES
+        );
+    }
+
 
     /**
      * 💡 Step 2: 최종 회원가입 및 코드 검증
@@ -82,21 +118,14 @@ public class UserService {
     public Users signUp(SignUpRequest request) { // 반환 타입은 Users
 
         String email = request.getEmail();
-        String code = request.getVerificationCode();
-        String redisKey = EMAIL_VERIFICATION_PREFIX + email;
+        String redisFlagKey = VERIFIED_EMAIL_PREFIX + email;
 
-        // 2. Redis에서 인증 코드 조회
-        Object storedCodeObject = redisTemplate.opsForValue().get(redisKey);
-
-        if (storedCodeObject == null) {
-            throw new IllegalArgumentException("인증 코드가 만료되었거나 발송되지 않았습니다. 코드를 다시 요청해주세요.");
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("이미 사용 중인 이메일입니다. 로그인해 주세요.");
         }
 
-        String storedCode = storedCodeObject.toString();
-
-        // 3. 코드 일치 확인
-        if (!storedCode.equals(code)) {
-            throw new IllegalArgumentException("인증 코드가 일치하지 않습니다.");
+        if (redisTemplate.opsForValue().get(redisFlagKey) == null) {
+            throw new IllegalArgumentException("이메일 인증이 완료되지 않았거나 인증 시간이 만료되었습니다. 다시 인증해 주세요.");
         }
 
         // --- 인증 성공: 최종 DB 저장 및 Redis 코드 삭제 ---
@@ -116,7 +145,7 @@ public class UserService {
         Users savedUser = userRepository.save(newUser);
 
         // 6. Redis의 임시 코드 삭제
-        redisTemplate.delete(redisKey);
+        redisTemplate.delete(redisFlagKey);
 
         return savedUser;
     }
