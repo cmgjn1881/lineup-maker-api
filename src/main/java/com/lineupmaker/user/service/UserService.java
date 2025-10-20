@@ -196,7 +196,7 @@ public class UserService {
         );
 
         // 5. 응답 DTO에 두 토큰을 담아 반환 (LoginResponse DTO 수정 필요)
-        return new LoginResponse(accessToken, refreshTokenValue, users.getEmail());
+        return new LoginResponse(accessToken, refreshTokenValue, users.getEmail(), users.getUsername());
     }
 
     /**

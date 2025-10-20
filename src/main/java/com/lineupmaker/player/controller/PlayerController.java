@@ -74,20 +74,19 @@ public class PlayerController {
     /**
      * 3. 선수 정보 수정 API (PUT)
      */
-    @PutMapping("/{playerId}")
+    @PutMapping(value = "/{playerId}", produces = "application/json")
     public ResponseEntity<PlayerResponse> updatePlayer(
             @PathVariable Long playerId,
             @RequestBody PlayerUpdateRequest request,
             Authentication authentication) {
 
         UUID ownerId = getCurrentUserId(authentication);
-        try {
-            Player updatedPlayer = playerService.updatePlayer(playerId, request, ownerId);
-            return ResponseEntity.ok(new PlayerResponse(updatedPlayer));
-        } catch (IllegalArgumentException e) {
-            // 권한 없음 또는 선수 ID 오류 발생 시 400 Bad Request
-            return ResponseEntity.badRequest().build();
-        }
+
+        // 🔑 [수정] try-catch 블록을 제거합니다.
+        // Service에서 발생한 IllegalArgumentException은 GlobalExceptionHandler로 전달됩니다.
+        Player updatedPlayer = playerService.updatePlayer(playerId, request, ownerId);
+
+        return ResponseEntity.ok(new PlayerResponse(updatedPlayer));
     }
 
     /**

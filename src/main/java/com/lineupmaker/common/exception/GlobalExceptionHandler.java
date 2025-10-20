@@ -6,38 +6,41 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+record ErrorResponse(int status, String message) {}
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    /**
-     * 1. 403 Forbidden: 접근 권한 없는 예외 (Spring Security AccessDeniedException) 처리
-     * - updateTeam, deleteTeam 등 팀 소유자 검증 실패 시 발생하는 예외를 처리합니다.
-     */
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<String> handleAccessDeniedException(AccessDeniedException ex) {
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
+        ErrorResponse response = new ErrorResponse(HttpStatus.FORBIDDEN.value(), "접근이 거부되었습니다: " + ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN) // 403
-                .body("접근이 거부되었습니다: " + ex.getMessage());
+                .body(response); // 🔑 ErrorResponse DTO 반환
     }
 
     /**
-     * 2. 404 Not Found: 리소스가 없는 경우 (예: 존재하지 않는 Team ID) 처리
-     * - Service Layer에서 IllegalArgumentException을 던질 때 특정 키워드를 사용하여 분기 처리합니다.
-     * - TeamService의 '존재하지 않는 팀 ID입니다'와 같은 메시지를 기준으로 판단한다고 가정합니다.
+     * 2. 404 Not Found 및 400 Bad Request 처리
      */
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<String> handleIllegalArgumentException(IllegalArgumentException ex) {
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
 
-        // 특정 리소스 부재 메시지 패턴 확인 (Service Layer에서 던진 예외를 기반으로 판단)
-        if (ex.getMessage().contains("존재하지 않는 팀 ID") || ex.getMessage().contains("찾을 수 없습니다")) {
+        String message = ex.getMessage();
+
+        // 404 Not Found 처리
+        if (message.contains("존재하지 않는 팀 ID") || message.contains("찾을 수 없습니다")) {
+            ErrorResponse response = new ErrorResponse(HttpStatus.NOT_FOUND.value(), message);
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND) // 404
-                    .body(ex.getMessage());
+                    .body(response); // 🔑 ErrorResponse DTO 반환
         }
 
-        // 그 외 일반적인 IllegalArgumentException은 400 Bad Request로 처리
+        // 🔑 400 Bad Request 처리 (등번호 중복, 유효성 검사 실패 등)
+        // message는 "이미 사용중인 등번호입니다."를 포함합니다.
+        ErrorResponse response = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), message);
+
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST) // 400
-                .body(ex.getMessage());
+                .body(response); // 🔑 ErrorResponse DTO 반환
     }
 }
