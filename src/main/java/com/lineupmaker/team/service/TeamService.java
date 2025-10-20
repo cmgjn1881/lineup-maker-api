@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 import java.util.UUID;
@@ -53,7 +54,7 @@ public class TeamService {
 
         // 2. [핵심 보안 검증] 요청한 사용자가 팀의 소유자인지 확인
         if (!teamToUpdate.getOwner().getUserId().equals(ownerId)) {
-            throw new IllegalArgumentException("팀을 수정할 권한이 없습니다. (소유자만 가능)");
+            throw new AccessDeniedException("팀을 수정할 권한이 없습니다. (소유자만 가능)");
         }
 
         // 3. 팀 이름 변경 (Team 엔티티에 setter 또는 변경 메서드 필요)
@@ -73,7 +74,7 @@ public class TeamService {
 
         // 2. [핵심 보안 검증] 요청한 사용자가 팀의 소유자인지 확인
         if (!teamToUpdate.getOwner().getUserId().equals(ownerId)) {
-            throw new IllegalArgumentException("팀을 수정할 권한이 없습니다. (소유자만 가능)");
+            throw new AccessDeniedException("팀을 수정할 권한이 없습니다. (소유자만 가능)");
         }
 
         // 3. 팀 삭제

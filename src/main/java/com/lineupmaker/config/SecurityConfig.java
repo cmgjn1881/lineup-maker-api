@@ -1,5 +1,6 @@
 package com.lineupmaker.config;
 
+import com.lineupmaker.user.jwt.JwtAuthenticationEntryPoint;
 import com.lineupmaker.user.jwt.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,8 +25,13 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    // 🔑 JwtAuthenticationEntryPoint를 주입받거나 내부에서 초기화해야 합니다.
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter
+    , JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
         // this.passwordEncoder 필드 초기화 구문이 없어졌습니다.
     }
 
@@ -56,6 +62,13 @@ public class SecurityConfig {
                 // 세션 사용 안 함 (JWT 등 Stateless 인증 방식을 위해)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                // 인증 실패 및 인가 실패 예외 처리
+                .exceptionHandling(handling -> handling
+                                // 🔑 인증 실패 (토큰 없음/만료/오류): 401 Unauthorized 반환
+                                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        // .accessDeniedHandler(accessDeniedHandler) // 권한 부족 시 403 처리를 위한 핸들러 (선택 사항)
                 )
 
                 // 요청에 대한 접근 권한 설정
