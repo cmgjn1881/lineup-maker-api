@@ -27,18 +27,20 @@ spring:
 
   mail:
     host: smtp.naver.com # 네이버 SMTP 서버 주소
-    port: 465
+    port: 587
     username: ${MAIL_EMAIL} # 본인의 네이버 이메일 주소
     password: ${MAIL_PASSWORD} # 생성한 애플리케이션 비밀번호
     properties:
       mail:
         smtp:
-          auth: true # 인증 사용
-          # 💡 수정: SSL 대신 TLS 활성화
+          auth: true
+          starttls:
+            enable: true # STARTTLS 활성화
+            required: true # TLS 연결 필수
           ssl:
-            enable: true # SSL 비활성화
+            enable: false # 587에서는 SSL 비활성화
             trust: smtp.naver.com
-          connection timeout: 10000
+          connectiontimeout: 10000
           timeout: 10000
 
 
