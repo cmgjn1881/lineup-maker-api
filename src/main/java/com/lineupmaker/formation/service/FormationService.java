@@ -171,6 +171,10 @@ public class FormationService {
         return existingFormation;
     }
 
+    public List<Formation> getFormationsByOwner(UUID userId, Long teamId) {
+        return formationRepository.findByUser_UserIdAndTeam_TeamId(userId, teamId);
+    }
+
     /**
      * 포메이션 삭제
      * @param formationId 삭제할 포메이션 ID
