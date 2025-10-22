@@ -42,9 +42,12 @@ public class SecurityConfig {
 
     // Vercel 주소와 로컬 주소를 포함한 허용 출처 목록을 정의합니다.
     private static final List<String> ALLOWED_ORIGINS = Arrays.asList(
-            "http://localhost:5173", // 로컬 개발 주소
-            "https://lineup-frontend-nine.vercel.app/" // ⭐️ Vercel 배포 주소로 변경하세요!
-            // 필요한 경우 Render 백엔드 자체 주소도 추가할 수 있습니다.
+            // ✅ 1. 기본 프로덕션 도메인
+            "https://lineup-frontend-nine.vercel.app",
+            // ✅ 2. Git Preview 도메인
+            "https://lineup-frontend-git-develop-cmgjn1881s-projects.vercel.app",
+            // ✅ 3. 커밋/배포별 Preview 도메인
+            "https://lineup-frontend-87dma0lwz-cmgjn1881s-projects.vercel.app"
     );
 
     /**
