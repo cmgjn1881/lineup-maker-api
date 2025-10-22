@@ -35,13 +35,13 @@ spring:
         smtp:
           auth: true
           starttls:
-            enable: true # STARTTLS 활성화
-            required: true # TLS 연결 필수
+            enable: true
+            required: true
           ssl:
-            enable: false # 587에서는 SSL 비활성화
+            enable: false
             trust: smtp.naver.com
-          connectiontimeout: 10000
-          timeout: 10000
+          connectiontimeout: 30000 # 30초로 늘림 (이전 10초)
+          timeout: 30000 # 30초로 늘림 (이전 10초)
 
 
 logging:
