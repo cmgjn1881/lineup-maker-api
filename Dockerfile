@@ -17,7 +17,7 @@ RUN chmod +x gradlew
 RUN ./gradlew bootJar --no-daemon -x test
 
 # 2단계: 패키징 및 실행 스테이지 (더 가벼운 JRE 이미지 사용)
-FROM openjdk:17-jre-slim
+FROM openjdk:17-jre-alpine
 WORKDIR /app
 
 # 빌드 스테이지에서 생성된 JAR 파일 복사
