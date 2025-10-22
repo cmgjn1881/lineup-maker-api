@@ -4,6 +4,7 @@ import com.lineupmaker.user.jwt.JwtAuthenticationEntryPoint;
 import com.lineupmaker.user.jwt.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
@@ -13,11 +14,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -40,45 +36,6 @@ public class SecurityConfig {
         // this.passwordEncoder 필드 초기화 구문이 없어졌습니다.
     }
 
-    // Vercel 주소와 로컬 주소를 포함한 허용 출처 목록을 정의합니다.
-    private static final List<String> ALLOWED_ORIGINS = Arrays.asList(
-            // ✅ 1. 기본 프로덕션 도메인
-            "https://lineup-frontend-nine.vercel.app",
-            // ✅ 2. Git Preview 도메인
-            "https://lineup-frontend-git-develop-cmgjn1881s-projects.vercel.app",
-            // ✅ 3. 커밋/배포별 Preview 도메인
-            "https://lineup-frontend-87dma0lwz-cmgjn1881s-projects.vercel.app"
-    );
-
-    /**
-     * CORS 설정을 위한 Bean 정의 (핵심 수정 부분)
-     */
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-
-        // 1. 허용할 출처(Origins) 설정
-        configuration.setAllowedOrigins(ALLOWED_ORIGINS);
-
-        // 2. 허용할 HTTP 메서드 설정 (GET, POST, PUT, DELETE, OPTIONS 등)
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-
-        // 3. 허용할 헤더 설정 (모두 허용)
-        configuration.setAllowedHeaders(List.of("*"));
-
-        // 4. 인증 정보 (쿠키, Authorization 헤더 등) 전송 허용
-        configuration.setAllowCredentials(true);
-
-        // 5. 캐시 시간 설정 (브라우저가 CORS 정보를 캐시하는 시간)
-        configuration.setMaxAge(3600L); // 1시간
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // 모든 경로(/**)에 대해 위에서 정의한 CORS 설정을 적용합니다.
-        source.registerCorsConfiguration("/**", configuration);
-
-        return source;
-    }
-
     /**
      * 특정 경로에 대해 Security Filter Chain을 완전히 무시하도록 설정
      * CSRF 및 모든 보안 검사를 우회하여 403 문제를 해결합니다.
@@ -99,9 +56,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                //CORS 비활성화 코드를 제거하고, 정의된 Bean을 사용해 CORS를 활성화합니다.
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // ✅ 수정: WebMvcConfigurer에서 설정한 CORS를 자동으로 사용하도록 설정
+                .cors(Customizer.withDefaults())
 
                 // 세션 사용 안 함 (JWT 등 Stateless 인증 방식을 위해)
                 .sessionManagement(session -> session
