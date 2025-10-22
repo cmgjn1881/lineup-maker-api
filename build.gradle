@@ -41,9 +41,9 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
 
-	// 이메일 인증
-	implementation 'org.springframework.boot:spring-boot-starter-mail'
-	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	// 이메일 인증 - render에서는 지원을 안함
+	//implementation 'org.springframework.boot:spring-boot-starter-mail'
+	//implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 
 	// [추가] PostgreSQL JDBC 드라이버 의존성 추가
 	implementation 'org.postgresql:postgresql'

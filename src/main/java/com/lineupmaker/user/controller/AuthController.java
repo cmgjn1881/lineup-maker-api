@@ -26,32 +26,32 @@ public class AuthController {
     }
 
     // 💡 [새로운 API] Step 1: 이메일만 입력받아 인증 코드를 요청하고 발송
-    @PostMapping("/send-code")
-    public ResponseEntity<String> sendCode(@RequestBody EmailRequest request) {
-        try {
-            userService.sendVerificationCode(request.getEmail());
-            return ResponseEntity.ok("인증 코드가 이메일로 발송되었습니다. 5분 내로 코드를 입력해주세요.");
-        } catch (IllegalArgumentException e) {
-            // 이미 가입된 이메일 등 오류
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (RuntimeException e) {
-            // 이메일 전송 실패
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-        }
-    }
+//    @PostMapping("/send-code")
+//    public ResponseEntity<String> sendCode(@RequestBody EmailRequest request) {
+//        try {
+//            userService.sendVerificationCode(request.getEmail());
+//            return ResponseEntity.ok("인증 코드가 이메일로 발송되었습니다. 5분 내로 코드를 입력해주세요.");
+//        } catch (IllegalArgumentException e) {
+//            // 이미 가입된 이메일 등 오류
+//            return ResponseEntity.badRequest().body(e.getMessage());
+//        } catch (RuntimeException e) {
+//            // 이메일 전송 실패
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+//        }
+//    }
 
     // 2. 코드 검증 및 플래그 저장 (Step 2: POST /api/auth/verify-code)
-    @PostMapping("/verify-code")
-    public ResponseEntity<String> verifyCode(@RequestBody CodeVerificationRequest request) {
-        try {
-            // Redis에 코드 검증 후, 최종 가입을 허용하는 플래그를 저장
-            userService.verifyCodeAndSetFlag(request);
-            return ResponseEntity.ok("이메일 인증이 완료되었습니다. 이제 회원가입을 계속 진행해주세요.");
-        } catch (IllegalArgumentException e) {
-            // 코드 불일치, 코드 만료 등 오류
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
+//    @PostMapping("/verify-code")
+//    public ResponseEntity<String> verifyCode(@RequestBody CodeVerificationRequest request) {
+//        try {
+//            // Redis에 코드 검증 후, 최종 가입을 허용하는 플래그를 저장
+//            userService.verifyCodeAndSetFlag(request);
+//            return ResponseEntity.ok("이메일 인증이 완료되었습니다. 이제 회원가입을 계속 진행해주세요.");
+//        } catch (IllegalArgumentException e) {
+//            // 코드 불일치, 코드 만료 등 오류
+//            return ResponseEntity.badRequest().body(e.getMessage());
+//        }
+//    }
 
     // 회원가입 API (POST /api/auth/signup)
     @PostMapping("/signup")

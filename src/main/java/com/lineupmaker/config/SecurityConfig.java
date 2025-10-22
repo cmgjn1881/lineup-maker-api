@@ -42,8 +42,8 @@ public class SecurityConfig {
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
         return (web) -> web.ignoring().requestMatchers(
-                "/api/auth/send-code",
-                "/api/auth/verify-code",
+                //"/api/auth/send-code",
+                //"/api/auth/verify-code",
                 "/api/auth/signup",
                 "/api/auth/login",
                 "/api/auth/refresh",

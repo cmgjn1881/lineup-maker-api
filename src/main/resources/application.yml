@@ -25,23 +25,26 @@ spring:
       hibernate.format_sql: true
       hibernate.show_sql: true
 
-  mail:
-    host: smtp.naver.com # 네이버 SMTP 서버 주소
-    port: 587
-    username: ${MAIL_EMAIL} # 본인의 네이버 이메일 주소
-    password: ${MAIL_PASSWORD} # 생성한 애플리케이션 비밀번호
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
-          ssl:
-            enable: false
-            trust: smtp.naver.com
-          connectiontimeout: 30000 # 30초로 늘림 (이전 10초)
-          timeout: 30000 # 30초로 늘림 (이전 10초)
+  # ---------------------------------------------
+  # ⚠️ [주석 처리] Render의 SMTP 차단을 우회하기 위해 잠시 비활성화
+  # mail:
+  #   host: smtp.naver.com
+  #   port: 587
+  #   username: ${MAIL_EMAIL}
+  #   password: ${MAIL_PASSWORD}
+  #   properties:
+  #     mail:
+  #       smtp:
+  #         auth: true
+  #         starttls:
+  #           enable: true
+  #           required: true
+  #         ssl:
+  #           enable: false
+  #           trust: smtp.naver.com
+  #         connectiontimeout: 30000
+  #         timeout: 30000
+  # ---------------------------------------------
 
 
 logging:
