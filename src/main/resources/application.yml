@@ -38,6 +38,8 @@ spring:
           ssl:
             enable: true # SSL 비활성화
             trust: smtp.naver.com
+          connection timeout: 10000
+          timeout: 10000
 
 
 logging:
