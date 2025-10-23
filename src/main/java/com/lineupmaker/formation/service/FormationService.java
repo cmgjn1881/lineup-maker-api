@@ -192,6 +192,15 @@ public class FormationService {
             throw new IllegalArgumentException("이 포메이션을 삭제할 권한이 없습니다.");
         }
 
+        // 이것이 외래 키 제약 조건 오류를 해결하는 가장 안전한 방법입니다.
+        List<FormationPlayer> placementsToDelete = placementRepository.findByFormationFormationId(formationId);
+        if (!placementsToDelete.isEmpty()) {
+            placementRepository.deleteAll(placementsToDelete);
+
+            // 삭제 쿼리를 DB에 즉시 반영 (Flush)하여 제약 조건 위반을 방지
+            entityManager.flush();
+        }
+
         // 2. 포메이션 삭제 (연관된 FormationPlayer는 ON DELETE CASCADE로 자동 삭제됨)
         formationRepository.delete(existingFormation);
     }
