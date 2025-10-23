@@ -12,6 +12,7 @@ public class CorsWebConfig implements WebMvcConfigurer {
 
     // Vercel 도메인 목록
     private static final List<String> ALLOWED_ORIGINS = Arrays.asList(
+            "http://localhost:5173",
             "https://lineup-frontend-nine.vercel.app",
             "https://lineup-frontend-git-develop-cmgjn1881s-projects.vercel.app",
             "https://lineup-frontend-87dma0lwz-cmgjn1881s-projects.vercel.app"
