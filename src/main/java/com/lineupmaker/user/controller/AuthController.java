@@ -54,17 +54,14 @@ public class AuthController {
         return ResponseEntity.ok(newAccessToken);
     }
 
-    /**
-     * ✨ [NEW] 임시 토큰을 실제 토큰으로 교환하는 API 엔드포인트
-     * @param payload 프론트엔드에서 보낸 임시 토큰을 담은 JSON 객체 (예: {"tempToken": "..."})
-     * @return 실제 토큰 정보가 담긴 TokenBundle 객체
-     */
     @PostMapping("/token/exchange")
-    public ResponseEntity<TokenBundle> exchangeToken(@RequestBody Map<String, String> payload) {
-        String tempToken = payload.get("tempToken");
-        if (tempToken == null || tempToken.isEmpty()) {
+    public ResponseEntity<TokenBundle> exchangeToken(@RequestBody TempTokenExchangeRequest request) {
+        String tempToken = request.getTempToken();
+        if (!StringUtils.hasText(tempToken)) {
+            // 400 Bad Request
             return ResponseEntity.badRequest().build();
         }
+        // 💡 프론트엔드의 요청 본문 방식에 맞춰서 처리
         TokenBundle tokenBundle = userService.exchangeTempToken(tempToken);
         return ResponseEntity.ok(tokenBundle);
     }
