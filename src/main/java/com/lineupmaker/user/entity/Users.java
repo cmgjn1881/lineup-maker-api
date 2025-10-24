@@ -5,7 +5,6 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.GenericGenerator;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -17,50 +16,53 @@ import java.util.UUID;
 public class Users {
 
     @Id
-    // [변경] PostgreSQL은 UUID 생성을 DB에 맡기거나 코드로 처리합니다.
-    // UUID 생성을 위한 @GenericGenerator 설정 제거
-    @GeneratedValue(strategy = GenerationType.UUID) // JPA 3.1부터 제공되는 UUID 생성 전략
-    @Column(name = "user_id") // columnDefinition 제거 (기본 UUID 타입 사용)
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "user_id")
     private UUID userId;
 
-    @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = true)
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = true, length = 60) // length 지정 (60자)
     private String password;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50) // length 지정 (50자)
     private String username;
 
     @Column(name = "is_verified", nullable = false)
-    private Boolean isVerified = false; // 기본값 FALSE로 설정
+    private Boolean isVerified = false;
 
-    // 💡 추가 1: 이메일 인증 토큰
-    @Column(name = "email_check_token")
-    private String emailCheckToken;
+    // ⭐️ [수정]: provider 필드에 기본값 설정 (DB NOT NULL에 맞춤)
+    // Spring이 기본값을 인식할 수 있도록 @Builder에서는 값을 명시적으로 받거나 필드 초기화를 사용합니다.
+    @Column(nullable = false, length = 20)
+    private String provider = "local"; // ⭐️ 필드 레벨에서 기본값 'local' 설정
 
-    // 💡 추가 2: 토큰 만료 시간
-    @Column(name = "token_expiry_date")
-    private LocalDateTime emailTokenExpiryDate;
+    @Column(name = "provider_id", nullable = true)
+    private String providerId;
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now(); // ⭐️ 필드 레벨에서 기본값 설정
 
+    // ⭐️ [핵심 수정]: Builder를 소셜 로그인과 일반 로그인 모두 지원하도록 확장
     @Builder
-    public Users(String email, String password, String username) {
+    public Users(UUID userId, String email, String password, String username, String provider, String providerId, Boolean isVerified) {
+        this.userId = userId;
         this.email = email;
         this.password = password;
         this.username = username;
+        // 🚨 provider가 명시되지 않은 경우 'local'로 설정 (로컬 회원가입 시)
+        this.provider = provider != null ? provider : "local";
+        this.providerId = providerId;
+        this.isVerified = isVerified != null ? isVerified : false;
         this.createdAt = LocalDateTime.now();
     }
 
-    // --- 인증 로직을 위한 Setter 역할의 메서드 추가 ---
-    /**
-     * 이메일 인증 성공 시 상태를 업데이트합니다.
-     */
+    // 💡 [추가] 닉네임 업데이트 메서드 (소셜 로그인 재접속 시 사용)
+    public void updateUsername(String newUsername) {
+        this.username = newUsername;
+    }
+
     public void completeVerification() {
         this.isVerified = true;
-        this.emailCheckToken = null; // 사용된 토큰은 즉시 무효화
-        this.emailTokenExpiryDate = null; // 만료 시간 제거
     }
 }

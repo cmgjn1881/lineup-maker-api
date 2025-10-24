@@ -1,12 +1,11 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.5.6'
-	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.springframework.boot' version '3.2.6'
+	id 'io.spring.dependency-management' version '1.1.5'
 }
 
 group = 'com.lineupmaker'
 version = '0.0.1-SNAPSHOT'
-description = 'Demo project for Spring Boot'
 
 java {
 	toolchain {
@@ -30,33 +29,34 @@ dependencies {
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	annotationProcessor 'org.projectlombok:lombok'
 
-	// Spring Data JPA (Repository)
+	// Spring Data JPA
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
-	// Spring Security (필수: 비밀번호 암호화 등 보안 기능)
+	// Spring Security
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 
-	// [추가] JWT 라이브러리 (jjwt-api, jjwt-impl, jjwt-jackson)
+	// JWT
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
 
-	// 이메일 인증 - render에서는 지원을 안함
-	//implementation 'org.springframework.boot:spring-boot-starter-mail'
-	//implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	// OAuth 2.0 Client
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
-	// [추가] PostgreSQL JDBC 드라이버 의존성 추가
-	implementation 'org.postgresql:postgresql'
+	// PostgreSQL Driver (⭐️ implementation -> runtimeOnly로 변경)
+	runtimeOnly 'org.postgresql:postgresql'
 
-	// redis
+	// Redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
-	// dotenv 라이브러리 추가
+	// dotenv
 	implementation 'io.github.cdimascio:dotenv-java:3.0.0'
 
+	// Test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
+
 
 tasks.named('test') {
 	useJUnitPlatform()

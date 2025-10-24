@@ -2,17 +2,21 @@
 
 -- 1. 사용자 (users) 테이블
 CREATE TABLE IF NOT EXISTS users (
+
                                      user_id UUID PRIMARY KEY,
-                                     email VARCHAR(255) UNIQUE NOT NULL,
-                                     password VARCHAR(60) NOT NULL,
+                                     email VARCHAR(255) NULL,
+                                     password VARCHAR(60) NULL,
                                      username VARCHAR(50) NOT NULL,
                                      is_verified BOOLEAN NOT NULL DEFAULT FALSE,
                                      email_check_token VARCHAR(36),
                                      token_expiry_date TIMESTAMP WITHOUT TIME ZONE,
-                                     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+                                     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+                                     provider VARCHAR(20) NOT NULL,
+                                     provider_id VARCHAR(255) NULL
 );
 
-CREATE INDEX idx_email_check_token ON users (email_check_token);
+CREATE UNIQUE INDEX unique_social_user_idx ON users (provider, provider_id) WHERE provider_id IS NOT NULL;
+CREATE UNIQUE INDEX unique_local_email_idx ON users (email) WHERE provider = 'local';
 
 -- 2. 팀 (team) 테이블 (users 참조)
 CREATE TABLE IF NOT EXISTS team (

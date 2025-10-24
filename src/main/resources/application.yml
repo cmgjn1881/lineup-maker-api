@@ -4,6 +4,28 @@ jwt:
   refresh-expiration: ${JWT_REFRESH_EXPIRATION_SECONDS}
 
 spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            # ✨ [배포 설정] 실제 배포된 백엔드 주소로 변경
+            redirect-uri: https://lineup-maker-api.onrender.com/login/oauth2/code/kakao
+            scope:
+              - profile_nickname
+            client-name: Kakao
+
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
   datasource:
     driver-class-name: org.postgresql.Driver
     url: ${SPRING_DATASOURCE_URL}
@@ -17,40 +39,20 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
-
+      ddl-auto: update # ✨ [배포 주의] 운영 환경에서는 'update' 대신 'validate' 또는 'none'을 권장합니다.
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-
     properties:
       hibernate.format_sql: true
       hibernate.show_sql: true
-
-  # ---------------------------------------------
-  # ⚠️ [주석 처리] Render의 SMTP 차단을 우회하기 위해 잠시 비활성화
-  # mail:
-  #   host: smtp.naver.com
-  #   port: 587
-  #   username: ${MAIL_EMAIL}
-  #   password: ${MAIL_PASSWORD}
-  #   properties:
-  #     mail:
-  #       smtp:
-  #         auth: true
-  #         starttls:
-  #           enable: true
-  #           required: true
-  #         ssl:
-  #           enable: false
-  #           trust: smtp.naver.com
-  #         connectiontimeout: 30000
-  #         timeout: 30000
-  # ---------------------------------------------
-
 
 logging:
   level:
     org.hibernate.SQL: debug
     org.hibernate.type.descriptor.sql.BasicExtractor: trace
+    org.springframework.security: INFO
 
 app:
   base-url: https://lineup-maker-api.onrender.com
+  oauth2:
+    # ✨ [배포 설정] 실제 배포된 프론트엔드 주소로 변경 (Vercel 주소)
+    redirect-uri: https://lineup-frontend-nine.vercel.app

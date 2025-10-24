@@ -1,17 +1,22 @@
 package com.lineupmaker.config;
 
+import com.lineupmaker.auth.handler.OAuth2AuthenticationFailureHandler;
+import com.lineupmaker.auth.handler.OAuth2AuthenticationSuccessHandler;
 import com.lineupmaker.user.jwt.JwtAuthenticationEntryPoint;
 import com.lineupmaker.user.jwt.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
+import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -24,61 +29,62 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    // 🔑 JwtAuthenticationEntryPoint를 주입받거나 내부에서 초기화해야 합니다.
-    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    @Autowired
+    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter
-    , JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
-        // this.passwordEncoder 필드 초기화 구문이 없어졌습니다.
-    }
+    @Autowired
+    private OAuth2UserService customOAuth2UserService;
+    @Lazy
+    @Autowired
+    private OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
 
-    /**
-     * 특정 경로에 대해 Security Filter Chain을 완전히 무시하도록 설정
-     * CSRF 및 모든 보안 검사를 우회하여 403 문제를 해결합니다.
-     */
+    // ✨ [추가] FailureHandler를 주입받습니다.
+    @Autowired
+    private OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
+
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
         return (web) -> web.ignoring().requestMatchers(
-                //"/api/auth/send-code",
-                //"/api/auth/verify-code",
+                "/favicon.ico",
                 "/api/auth/signup",
                 "/api/auth/login",
                 "/api/auth/refresh",
-                "/api/auth/logout" // 로그아웃 경로를 Security 필터에서 완전히 제외
+                "/api/auth/logout"
         );
     }
 
-    // 2. HTTP 보안 필터 체인 설정 (핵심!)
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                // ✅ 수정: WebMvcConfigurer에서 설정한 CORS를 자동으로 사용하도록 설정
                 .cors(Customizer.withDefaults())
 
-                // 세션 사용 안 함 (JWT 등 Stateless 인증 방식을 위해)
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .oauth2Login(oauth2 -> oauth2
+                                .authorizationEndpoint(auth -> auth
+                                        .baseUri("/oauth2/authorization")
+                                        .authorizationRequestRepository(new HttpSessionOAuth2AuthorizationRequestRepository())
+                                )
+                                .redirectionEndpoint(redirection -> redirection
+                                        .baseUri("/login/oauth2/code/*")
+                                )
+                                .userInfoEndpoint(userInfo -> userInfo
+                                        .userService(customOAuth2UserService)
+                                )
+                                .successHandler(oAuth2AuthenticationSuccessHandler)
+                                // ✨ [추가] 로그인 실패 시 동작할 핸들러를 등록합니다.
+                                .failureHandler(oAuth2AuthenticationFailureHandler)
                 )
 
-                // 인증 실패 및 인가 실패 예외 처리
                 .exceptionHandling(handling -> handling
-                                // 🔑 인증 실패 (토큰 없음/만료/오류): 401 Unauthorized 반환
                                 .authenticationEntryPoint(jwtAuthenticationEntryPoint)
-                        // .accessDeniedHandler(accessDeniedHandler) // 권한 부족 시 403 처리를 위한 핸들러 (선택 사항)
                 )
 
-                // 요청에 대한 접근 권한 설정
                 .authorizeHttpRequests(auth -> auth
-                        // 나머지 모든 요청은 인증 필요 (Authenticated)
                         .anyRequest().authenticated()
                 )
-                // [핵심 추가] JWT 필터를 UsernamePasswordAuthenticationFilter 이전에 등록하여
-                // 매 요청마다 토큰을 검증하게 합니다.
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
