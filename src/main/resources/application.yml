@@ -39,7 +39,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update # ✨ [배포 주의] 운영 환경에서는 'update' 대신 'validate' 또는 'none'을 권장합니다.
+      ddl-auto: validate # ✨ [배포 주의] 운영 환경에서는 'update' 대신 'validate' 또는 'none'을 권장합니다.
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate.format_sql: true
@@ -49,7 +49,7 @@ logging:
   level:
     org.hibernate.SQL: info # 배포환경에서는 INFO, WARN 개발환경 debug
     org.hibernate.type.descriptor.sql.BasicExtractor: info # 배포환경에서는 INFO, WARN
-    org.springframework.security: INFO
+    org.springframework.security: info
 
 app:
   base-url: https://lineup-maker-api.onrender.com
@@ -57,3 +57,4 @@ app:
   oauth2:
     # ✨ [배포 설정] 실제 배포된 프론트엔드 주소로 변경 (Vercel 주소)
     redirect-uri: https://lineup-frontend-nine.vercel.app
+  health-check-key: ${HEALTH_SECRET_TOKEN}
