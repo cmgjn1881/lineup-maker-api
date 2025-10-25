@@ -109,10 +109,16 @@ public class UserService {
     @Transactional
     public void logout(String accessTokenValue) {
         if (StringUtils.hasText(accessTokenValue)) {
-            Long remainingTime = tokenProvider.getRemainingExpirationTime(accessTokenValue);
-            if (remainingTime > 0) {
-                String userId = tokenProvider.getSubject(accessTokenValue);
-                redisTemplate.opsForValue().set("blacklist:" + accessTokenValue, userId, remainingTime, TimeUnit.MILLISECONDS);
+            try {
+                Long remainingTime = tokenProvider.getRemainingExpirationTime(accessTokenValue);
+                if (remainingTime > 0) {
+                    String userId = tokenProvider.getSubject(accessTokenValue);
+                    redisTemplate.opsForValue().set("blacklist:" + accessTokenValue, userId, remainingTime, TimeUnit.MILLISECONDS);
+                }
+            } catch (Exception e) {
+                // 토큰이 만료되었거나 유효하지 않은 경우 예외가 발생할 수 있습니다.
+                // 이 경우, 토큰은 어차피 더 이상 유효하지 않으므로 블랙리스트에 추가할 필요가 없습니다.
+                // 로그아웃 요청은 성공적으로 처리된 것으로 간주합니다.
             }
         }
         // Refresh Token은 클라이언트에서 삭제하는 것을 전제로 하므로 서버에서는 별도 처리하지 않음
@@ -147,6 +153,7 @@ public class UserService {
     public void withdraw(UUID userId, String password) {
         Users user = findById(userId);
 
+        // 일반 로그인 사용자의 경우에만 비밀번호 확인
         if (user.getPassword() != null && !passwordEncoder.matches(password, user.getPassword())) {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }

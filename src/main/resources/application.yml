@@ -47,12 +47,13 @@ spring:
 
 logging:
   level:
-    org.hibernate.SQL: debug
-    org.hibernate.type.descriptor.sql.BasicExtractor: trace
+    org.hibernate.SQL: info # 배포환경에서는 INFO, WARN 개발환경 debug
+    org.hibernate.type.descriptor.sql.BasicExtractor: info # 배포환경에서는 INFO, WARN
     org.springframework.security: INFO
 
 app:
   base-url: https://lineup-maker-api.onrender.com
+  #base-url: http://localhost:8080
   oauth2:
     # ✨ [배포 설정] 실제 배포된 프론트엔드 주소로 변경 (Vercel 주소)
     redirect-uri: https://lineup-frontend-nine.vercel.app
