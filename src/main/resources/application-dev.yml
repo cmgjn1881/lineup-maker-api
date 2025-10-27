@@ -1,4 +1,5 @@
 # 개발 환경용 설정 (상세 로그)
+
 spring:
   jpa:
     properties:
