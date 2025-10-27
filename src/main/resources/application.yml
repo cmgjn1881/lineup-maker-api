@@ -59,5 +59,5 @@ app:
   #base-url: http://localhost:8080
   oauth2:
     # ✨ [배포 설정] 실제 배포된 프론트엔드 주소로 변경 (Vercel 주소)
-    redirect-uri: https://lineup-frontend-nine.vercel.app
+
   health-check-key: ${HEALTH_SECRET_TOKEN}

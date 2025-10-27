@@ -8,10 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -30,6 +28,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
         LoginResponse response = userService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/social-login")
+    public ResponseEntity<LoginResponse> socialLogin(@RequestBody SocialLoginRequest request) {
+        LoginResponse response = userService.socialLogin(request);
         return ResponseEntity.ok(response);
     }
 
@@ -52,18 +56,6 @@ public class AuthController {
         String refreshToken = request.getHeader("X-Refresh-Token");
         String newAccessToken = userService.refreshAccessToken(refreshToken, oldAccessToken);
         return ResponseEntity.ok(newAccessToken);
-    }
-
-    @PostMapping("/token/exchange")
-    public ResponseEntity<TokenBundle> exchangeToken(@RequestBody TempTokenExchangeRequest request) {
-        String tempToken = request.getTempToken();
-        if (!StringUtils.hasText(tempToken)) {
-            // 400 Bad Request
-            return ResponseEntity.badRequest().build();
-        }
-        // 💡 프론트엔드의 요청 본문 방식에 맞춰서 처리
-        TokenBundle tokenBundle = userService.exchangeTempToken(tempToken);
-        return ResponseEntity.ok(tokenBundle);
     }
 
     @PostMapping("/logout")

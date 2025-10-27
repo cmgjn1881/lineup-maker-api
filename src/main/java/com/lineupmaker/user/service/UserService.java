@@ -3,7 +3,7 @@ package com.lineupmaker.user.service;
 import com.lineupmaker.user.dto.LoginRequest;
 import com.lineupmaker.user.dto.LoginResponse;
 import com.lineupmaker.user.dto.SignUpRequest;
-import com.lineupmaker.user.dto.TokenBundle;
+import com.lineupmaker.user.dto.SocialLoginRequest;
 import com.lineupmaker.user.entity.RefreshToken;
 import com.lineupmaker.user.entity.Users;
 import com.lineupmaker.user.jwt.JwtTokenProvider;
@@ -29,6 +29,7 @@ public class UserService {
     private final JwtTokenProvider tokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final KakaoApiService kakaoApiService; // 카카오 서비스 주입
 
     @Transactional
     public void signup(SignUpRequest request) {
@@ -56,6 +57,35 @@ public class UserService {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
 
+        return createAndSaveTokens(user);
+    }
+
+    @Transactional
+    public LoginResponse socialLogin(SocialLoginRequest request) {
+        // 현재는 카카오만 지원
+        if (!"kakao".equalsIgnoreCase(request.getProvider())) {
+            throw new IllegalArgumentException("지원하지 않는 소셜 로그인입니다.");
+        }
+
+        KakaoApiService.KakaoUserInfo kakaoUserInfo = kakaoApiService.getUserInfo(request.getAccessToken());
+        String providerId = kakaoUserInfo.getId();
+
+        Users user = userRepository.findByProviderAndProviderId("kakao", providerId)
+                .orElseGet(() -> {
+                    // 신규 사용자인 경우, DB에 새로 저장 (회원가입)
+                    Users newUser = Users.builder()
+                            .username(kakaoUserInfo.getNickname())
+                            .provider("kakao")
+                            .providerId(providerId)
+                            .isVerified(true)
+                            .build();
+                    return userRepository.save(newUser);
+                });
+
+        return createAndSaveTokens(user);
+    }
+
+    private LoginResponse createAndSaveTokens(Users user) {
         String userIdStr = user.getUserId().toString();
         String accessToken = tokenProvider.createToken(userIdStr, "USER");
         String refreshTokenValue = tokenProvider.createRefreshToken(userIdStr);
@@ -117,35 +147,7 @@ public class UserService {
                 }
             } catch (Exception e) {
                 // 토큰이 만료되었거나 유효하지 않은 경우 예외가 발생할 수 있습니다.
-                // 이 경우, 토큰은 어차피 더 이상 유효하지 않으므로 블랙리스트에 추가할 필요가 없습니다.
-                // 로그아웃 요청은 성공적으로 처리된 것으로 간주합니다.
             }
-        }
-        // Refresh Token은 클라이언트에서 삭제하는 것을 전제로 하므로 서버에서는 별도 처리하지 않음
-    }
-
-    /**
-     * ✨ [NEW] 임시 토큰을 실제 토큰 묶음으로 교환합니다.
-     * @param tempToken 프론트엔드에서 받은 일회용 임시 토큰
-     * @return Redis에 저장되어 있던 실제 토큰 묶음 (AccessToken, RefreshToken 등)
-     */
-    public TokenBundle exchangeTempToken(String tempToken) {
-        // 1. Redis에서 임시 토큰을 사용하여 저장된 TokenBundle을 조회합니다.
-        Object storedObject = redisTemplate.opsForValue().get(tempToken);
-
-        if (storedObject == null) {
-            throw new IllegalArgumentException("유효하지 않거나 만료된 임시 토큰입니다.");
-        }
-
-        // 2. (중요) 한번 사용한 임시 토큰은 즉시 삭제하여 재사용을 방지합니다.
-        redisTemplate.delete(tempToken);
-
-        // 3. 조회된 객체를 TokenBundle 타입으로 변환하여 반환합니다.
-        if (storedObject instanceof TokenBundle) {
-            return (TokenBundle) storedObject;
-        } else {
-            // 예상치 못한 타입의 객체가 저장된 경우, 로깅하고 예외를 발생시킬 수 있습니다.
-            throw new IllegalStateException("Redis에 예기치 않은 타입의 데이터가 저장되어 있습니다.");
         }
     }
 
@@ -153,15 +155,11 @@ public class UserService {
     public void withdraw(UUID userId, String password) {
         Users user = findById(userId);
 
-        // 일반 로그인 사용자의 경우에만 비밀번호 확인
         if (user.getPassword() != null && !passwordEncoder.matches(password, user.getPassword())) {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
 
-        // 연관된 RefreshToken 삭제
         refreshTokenRepository.deleteById(userId);
-
-        // 사용자 삭제
         userRepository.delete(user);
     }
 
