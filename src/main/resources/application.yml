@@ -13,10 +13,12 @@ spring:
           kakao:
             client-id: ${KAKAO_CLIENT_ID}
             client-secret: ${KAKAO_CLIENT_SECRET}
+            authorization-grant-type: authorization_code
+            redirect-uri: "https://lineup-maker-api.onrender.com/login/oauth2/code/kakao"
             scope:
               - profile_nickname
             client-name: Kakao
-            authorization-grant-type: authorization_code # ✨ [추가] Spring Security 자동 설정을 위한 필수 값
+
         provider:
           kakao:
             authorization-uri: https://kauth.kakao.com/oauth/authorize
@@ -41,7 +43,6 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    # database-platform: org.hibernate.dialect.PostgreSQLDialect # ✨ [제거] 불필요한 경고를 유발하므로 삭제
 
 app:
   base-url: https://lineup-maker-api.onrender.com
