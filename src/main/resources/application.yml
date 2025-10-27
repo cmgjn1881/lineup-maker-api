@@ -31,6 +31,8 @@ spring:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
 
   data:
     redis:
