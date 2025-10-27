@@ -3,6 +3,9 @@ jwt:
   expiration: ${JWT_EXPIRATION_SECONDS}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION_SECONDS}
 
+server:
+  port: 8080 # ✨ [추가] Render의 포트 감지 경고를 없애기 위해 명시적으로 포트 설정
+
 spring:
   profiles:
     active: dev # 기본 프로필을 dev로 설정
@@ -13,12 +16,11 @@ spring:
           kakao:
             client-id: ${KAKAO_CLIENT_ID}
             client-secret: ${KAKAO_CLIENT_SECRET}
-            authorization-grant-type: authorization_code
-            redirect-uri: "https://lineup-maker-api.onrender.com/login/oauth2/code/kakao"
             scope:
               - profile_nickname
             client-name: Kakao
-
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
         provider:
           kakao:
             authorization-uri: https://kauth.kakao.com/oauth/authorize
