@@ -29,29 +29,39 @@ public class UserService {
     private final JwtTokenProvider tokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
     private final RedisTemplate<String, Object> redisTemplate;
-    private final KakaoApiService kakaoApiService; // 카카오 서비스 주입
+    private final KakaoApiService kakaoApiService;
 
     @Transactional
     public void signup(SignUpRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
-        }
-
-        Users newUser = Users.builder()
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .username(request.getUsername())
-                .provider("local")
-                .isVerified(true)
-                .build();
-
-        userRepository.save(newUser);
+        userRepository.findByEmail(request.getEmail()).ifPresentOrElse(
+                existingUser -> {
+                    if ("WITHDRAWN".equals(existingUser.getStatus())) {
+                        existingUser.activate();
+                        existingUser.updatePassword(passwordEncoder.encode(request.getPassword()));
+                        existingUser.updateUsername(request.getUsername());
+                        userRepository.save(existingUser);
+                    } else {
+                        throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+                    }
+                },
+                () -> {
+                    Users newUser = Users.builder()
+                            .email(request.getEmail())
+                            .password(passwordEncoder.encode(request.getPassword()))
+                            .username(request.getUsername())
+                            .provider("local")
+                            .isVerified(true)
+                            .build();
+                    userRepository.save(newUser);
+                }
+        );
     }
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        Users user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("이메일을 찾을 수 없습니다."));
+        // ✨ [수정] ACTIVE 상태의 사용자만 로그인 허용
+        Users user = userRepository.findByEmailAndStatus(request.getEmail(), "ACTIVE")
+                .orElseThrow(() -> new IllegalArgumentException("이메일을 찾을 수 없거나 비활성화된 계정입니다."));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
@@ -62,7 +72,6 @@ public class UserService {
 
     @Transactional
     public LoginResponse socialLogin(SocialLoginRequest request) {
-        // 현재는 카카오만 지원
         if (!"kakao".equalsIgnoreCase(request.getProvider())) {
             throw new IllegalArgumentException("지원하지 않는 소셜 로그인입니다.");
         }
@@ -70,9 +79,15 @@ public class UserService {
         KakaoApiService.KakaoUserInfo kakaoUserInfo = kakaoApiService.getUserInfo(request.getAccessToken());
         String providerId = kakaoUserInfo.getId();
 
+        // ✨ [수정] 모든 상태의 사용자를 찾아, 탈퇴 상태이면 활성화
         Users user = userRepository.findByProviderAndProviderId("kakao", providerId)
+                .map(existingUser -> {
+                    if ("WITHDRAWN".equals(existingUser.getStatus())) {
+                        existingUser.activate();
+                    }
+                    return existingUser;
+                })
                 .orElseGet(() -> {
-                    // 신규 사용자인 경우, DB에 새로 저장 (회원가입)
                     Users newUser = Users.builder()
                             .username(kakaoUserInfo.getNickname())
                             .provider("kakao")
@@ -153,18 +168,21 @@ public class UserService {
 
     @Transactional
     public void withdraw(UUID userId, String password) {
-        Users user = findById(userId);
+        // ✨ [수정] 탈퇴 시에는 상태와 무관하게 ID로 사용자를 찾아야 함
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
 
         if (user.getPassword() != null && !passwordEncoder.matches(password, user.getPassword())) {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
 
+        user.markAsWithdrawn();
         refreshTokenRepository.deleteById(userId);
-        userRepository.delete(user);
     }
 
     public Users findById(UUID userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
+        // ✨ [수정] 일반적으로 사용자를 찾을 때는 ACTIVE 상태인 사용자만 조회
+        return userRepository.findActiveById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("활성화된 사용자를 찾을 수 없습니다: " + userId));
     }
 }
