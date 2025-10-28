@@ -39,7 +39,11 @@ public class SecurityConfig {
                 "/api/auth/social-login", // 소셜 로그인 경로 추가
                 "/api/auth/refresh",
                 "/api/auth/logout",
-                "/healthz"
+                "/healthz",
+                // Swagger UI v3
+                "/v3/api-docs/**",
+                "/swagger-ui/**",
+                "/swagger-resources/**"
         );
     }
 

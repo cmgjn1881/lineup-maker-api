@@ -4,7 +4,7 @@ jwt:
   refresh-expiration: ${JWT_REFRESH_EXPIRATION_SECONDS}
 
 server:
-  port: 8080 # ✨ [추가] Render의 포트 감지 경고를 없애기 위해 명시적으로 포트 설정
+  port: ${PORT:8080}
 
 kakao:
   admin:
