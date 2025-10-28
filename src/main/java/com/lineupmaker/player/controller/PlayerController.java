@@ -7,6 +7,7 @@ import com.lineupmaker.player.entity.Player;
 import com.lineupmaker.player.service.PlayerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,7 @@ public class PlayerController {
     private final PlayerService playerService;
 
     @Operation(summary = "팀에 선수 추가", description = "특정 팀에 새로운 선수를 추가합니다.")
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping
     public ResponseEntity<PlayerResponse> createPlayer(
             @Parameter(description = "선수를 추가할 팀의 ID") @PathVariable Long teamId,
@@ -40,6 +42,7 @@ public class PlayerController {
     }
 
     @Operation(summary = "팀의 선수 목록 조회", description = "특정 팀에 속한 모든 선수 목록을 조회합니다.")
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping
     public ResponseEntity<List<PlayerResponse>> getPlayers(
             @Parameter(description = "선수 목록을 조회할 팀의 ID") @PathVariable Long teamId) {
@@ -51,6 +54,7 @@ public class PlayerController {
     }
 
     @Operation(summary = "선수 정보 수정", description = "특정 선수의 정보를 수정합니다.")
+    @SecurityRequirement(name = "bearerAuth")
     @PutMapping(value = "/{playerId}", produces = "application/json")
     public ResponseEntity<PlayerResponse> updatePlayer(
             @Parameter(description = "수정할 선수의 ID") @PathVariable Long playerId,
@@ -63,6 +67,7 @@ public class PlayerController {
     }
 
     @Operation(summary = "선수 삭제", description = "특정 선수를 팀에서 삭제합니다.")
+    @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/{playerId}")
     public ResponseEntity<Void> deletePlayer(
             @Parameter(description = "삭제할 선수의 ID") @PathVariable Long playerId,

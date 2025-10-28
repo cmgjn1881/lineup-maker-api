@@ -7,6 +7,7 @@ import com.lineupmaker.formation.entity.Formation;
 import com.lineupmaker.formation.service.FormationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,7 @@ public class FormationController {
     private final FormationService formationService;
 
     @Operation(summary = "포메이션 생성", description = "새로운 포메이션을 생성합니다.")
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping
     public ResponseEntity<Long> createFormation(
             @RequestBody FormationCreateRequest request,
@@ -43,6 +45,7 @@ public class FormationController {
     }
 
     @Operation(summary = "팀의 포메이션 목록 조회", description = "특정 팀에 속한 모든 포메이션 목록을 조회합니다.")
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping
     public ResponseEntity<List<FormationListResponse>> getFormations(
             @Parameter(description = "포메이션을 조회할 팀의 ID") @RequestParam Long teamId,
@@ -57,6 +60,7 @@ public class FormationController {
     }
 
     @Operation(summary = "단일 포메이션 상세 조회", description = "특정 포메이션의 상세 정보를 조회합니다.")
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/{formationId}")
     public ResponseEntity<FormationResponse> getFormation(
             @Parameter(description = "조회할 포메이션의 ID") @PathVariable Long formationId,
@@ -72,6 +76,7 @@ public class FormationController {
     }
 
     @Operation(summary = "포메이션 수정", description = "기존 포메이션의 정보를 수정합니다.")
+    @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/{formationId}")
     public ResponseEntity<Long> updateFormation(
             @Parameter(description = "수정할 포메이션의 ID") @PathVariable Long formationId,
@@ -88,6 +93,7 @@ public class FormationController {
     }
 
     @Operation(summary = "포메이션 삭제", description = "특정 포메이션을 삭제합니다.")
+    @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/{formationId}")
     public ResponseEntity<Void> deleteFormation(
             @Parameter(description = "삭제할 포메이션의 ID") @PathVariable Long formationId,

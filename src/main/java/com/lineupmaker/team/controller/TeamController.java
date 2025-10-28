@@ -7,6 +7,7 @@ import com.lineupmaker.team.entity.Team;
 import com.lineupmaker.team.service.TeamService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,7 @@ public class TeamController {
     private final TeamService teamService;
 
     @Operation(summary = "팀 생성", description = "새로운 팀을 생성합니다.")
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping
     public ResponseEntity<TeamResponse> createTeam(
             @RequestBody TeamCreateRequest request,
@@ -39,6 +41,7 @@ public class TeamController {
     }
 
     @Operation(summary = "내 팀 목록 조회", description = "현재 로그인한 사용자가 소유한 모든 팀 목록을 조회합니다.")
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping
     public ResponseEntity<List<TeamResponse>> getMyTeams(@Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails) {
         UUID ownerId = UUID.fromString(userDetails.getUsername());
@@ -50,6 +53,7 @@ public class TeamController {
     }
 
     @Operation(summary = "팀 정보 수정", description = "특정 팀의 정보를 수정합니다.")
+    @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/{teamId}")
     public ResponseEntity<TeamResponse> updateTeam(
             @Parameter(description = "수정할 팀의 ID") @PathVariable Long teamId,
@@ -62,6 +66,7 @@ public class TeamController {
     }
 
     @Operation(summary = "팀 삭제", description = "특정 팀을 삭제합니다.")
+    @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/{teamId}")
     public ResponseEntity<Void> deleteTeam(
             @Parameter(description = "삭제할 팀의 ID") @PathVariable Long teamId,
