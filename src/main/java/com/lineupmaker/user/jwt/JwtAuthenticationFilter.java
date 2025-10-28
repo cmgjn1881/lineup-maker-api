@@ -29,13 +29,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 토큰 검증이 필요 없는 경로를 지정합니다.
         return path.startsWith("/api/auth/signup") ||
                 path.startsWith("/api/auth/login") ||
-                path.startsWith("/api/auth/refresh") ||
+                path.startsWith("//api/auth/refresh") ||
                 path.startsWith("/api/auth/logout") ||
                 path.startsWith("/api/auth/token/exchange") ||
-                // ✨ [추가] Swagger UI 관련 경로들은 JWT 필터에서 제외
+                // ✨ [수정] Swagger UI 관련 경로들을 JWT 필터에서 제외
                 path.startsWith("/v3/api-docs") ||
-                path.startsWith("/swagger-ui") ||
-                path.startsWith("/swagger-resources");
+                path.startsWith("/swagger-resources") ||
+                path.equals("/swagger-ui.html") ||
+                path.startsWith("/swagger-ui/");
     }
 
     @Override

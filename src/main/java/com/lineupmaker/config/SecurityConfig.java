@@ -48,8 +48,9 @@ public class SecurityConfig {
                                 "/healthz",
                                 // Swagger UI v3
                                 "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-resources/**"
+                                "/swagger-resources/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
