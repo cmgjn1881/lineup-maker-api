@@ -1,5 +1,8 @@
 package com.lineupmaker.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -10,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "헬스 체크", description = "애플리케이션 및 의존성 상태 확인 API")
 @Slf4j
 @RestController
 public class HealthCheckController {
@@ -26,8 +30,10 @@ public class HealthCheckController {
         this.redisTemplate = redisTemplate;
     }
 
+    @Operation(summary = "애플리케이션 헬스 체크", description = "DB 및 Redis 연결 상태를 확인하고, 서버를 깨웁니다.")
     @GetMapping("/healthz")
     public ResponseEntity<String> healthCheck(
+            @Parameter(description = "헬스 체크를 위한 비밀 키", required = true, example = "your-secret-key")
             @RequestHeader(value = "X-Health-Check-Key", required = false) String secretKey) {
 
         // 1. 보안 검증: 비밀 키 확인
