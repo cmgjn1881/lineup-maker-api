@@ -68,9 +68,10 @@ public class AuthController {
     @DeleteMapping("/withdraw")
     public ResponseEntity<Void> withdraw(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody WithdrawRequest request) {
+            @RequestBody(required = false) WithdrawRequest request) { // 일반 사용자를 위해 request body는 선택적으로 받음
         UUID userId = UUID.fromString(userDetails.getUsername());
-        userService.withdraw(userId, request.getPassword());
+        String password = (request != null) ? request.getPassword() : null;
+        userService.withdraw(userId, password);
         return ResponseEntity.noContent().build();
     }
 }

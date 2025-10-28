@@ -168,12 +168,18 @@ public class UserService {
 
     @Transactional
     public void withdraw(UUID userId, String password) {
-        // ✨ [수정] 탈퇴 시에는 상태와 무관하게 ID로 사용자를 찾아야 함
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
 
-        if (user.getPassword() != null && !passwordEncoder.matches(password, user.getPassword())) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        // 카카오 사용자인 경우
+        if ("kakao".equals(user.getProvider())) {
+            if (user.getProviderId() != null) {
+                kakaoApiService.unlinkUserWithAdminKey(user.getProviderId());
+            }
+        } else { // 일반 사용자인 경우
+            if (user.getPassword() != null && !passwordEncoder.matches(password, user.getPassword())) {
+                throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            }
         }
 
         user.markAsWithdrawn();

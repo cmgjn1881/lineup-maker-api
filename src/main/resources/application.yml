@@ -6,6 +6,10 @@ jwt:
 server:
   port: 8080 # ✨ [추가] Render의 포트 감지 경고를 없애기 위해 명시적으로 포트 설정
 
+kakao:
+  admin:
+    key: ${KAKAO_ADMIN_KEY}
+
 spring:
   profiles:
     active: dev # 기본 프로필을 dev로 설정
