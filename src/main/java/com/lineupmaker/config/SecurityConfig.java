@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,23 +30,6 @@ public class SecurityConfig {
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web.ignoring().requestMatchers(
-                "/favicon.ico",
-                "/api/auth/signup",
-                "/api/auth/login",
-                "/api/auth/social-login", // 소셜 로그인 경로 추가
-                "/api/auth/refresh",
-                "/api/auth/logout",
-                "/healthz",
-                // Swagger UI v3
-                "/v3/api-docs/**",
-                "/swagger-ui/**",
-                "/swagger-resources/**"
-        );
-    }
-
-    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -56,6 +38,19 @@ public class SecurityConfig {
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/favicon.ico",
+                                "/api/auth/signup",
+                                "/api/auth/login",
+                                "/api/auth/social-login",
+                                "/api/auth/refresh",
+                                "/api/auth/logout",
+                                "/healthz",
+                                // Swagger UI v3
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-resources/**"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
