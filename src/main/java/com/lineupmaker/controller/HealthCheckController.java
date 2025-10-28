@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "헬스 체크", description = "애플리케이션 및 의존성 상태 확인 API")
+@Tag(name = "헬스 체크")
 @Slf4j
 @RestController
 public class HealthCheckController {

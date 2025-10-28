@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Tag(name = "포메이션", description = "포메이션 생성, 조회, 수정, 삭제 API")
+@Tag(name = "포메이션")
 @RestController
 @RequestMapping("/api/formation")
 @RequiredArgsConstructor

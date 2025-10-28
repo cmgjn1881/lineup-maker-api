@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Tag(name = "선수", description = "팀 선수 생성, 조회, 수정, 삭제 API")
+@Tag(name = "선수")
 @RestController
 @RequestMapping("/api/teams/{teamId}/players")
 @RequiredArgsConstructor

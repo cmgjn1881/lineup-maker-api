@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-@Tag(name = "인증", description = "사용자 인증 및 가입 관련 API")
+@Tag(name = "인증")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
