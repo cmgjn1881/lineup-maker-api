@@ -1,12 +1,24 @@
--- -- docker/postgres/init/init.sql 파일 (refresh_token 테이블 제거 버전)
+-- -- 1. 모든 인덱스 및 테이블 삭제 (깨끗한 초기화를 위해)
+-- -- 인덱스 삭제는 보통 CASCADE가 포함된 테이블 삭제로 처리되지만, 명시적으로 삭제합니다.
+-- -- DROP INDEX IF EXISTS unique_social_user_idx;
+-- -- DROP INDEX IF EXISTS unique_local_email_idx;
+-- --
+-- -- -- 테이블 삭제 (참조 무결성을 위해 역순으로 삭제하거나 CASCADE 사용)
+-- -- DROP TABLE IF EXISTS formation_player CASCADE;
+-- -- DROP TABLE IF EXISTS formation CASCADE;
+-- -- DROP TABLE IF EXISTS player CASCADE;
+-- -- DROP TABLE IF EXISTS team CASCADE;
+-- -- DROP TABLE IF EXISTS users CASCADE;
 --
--- -- 1. 사용자 (users) 테이블
+--
+-- -- 2. 사용자 (users) 테이블
 -- CREATE TABLE IF NOT EXISTS users (
 --
 --                                      user_id UUID PRIMARY KEY,
 --                                      email VARCHAR(255) NULL,
 --                                      password VARCHAR(60) NULL,
 --                                      username VARCHAR(50) NOT NULL,
+--                                      status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
 --                                      is_verified BOOLEAN NOT NULL DEFAULT FALSE,
 --                                      email_check_token VARCHAR(36),
 --                                      token_expiry_date TIMESTAMP WITHOUT TIME ZONE,
@@ -15,10 +27,11 @@
 --                                      provider_id VARCHAR(255) NULL
 -- );
 --
+-- -- 인덱스 생성 (IF NOT EXISTS 추가)
 -- CREATE UNIQUE INDEX IF NOT EXISTS unique_social_user_idx ON users (provider, provider_id) WHERE provider_id IS NOT NULL;
 -- CREATE UNIQUE INDEX IF NOT EXISTS unique_local_email_idx ON users (email) WHERE provider = 'local';
 --
--- -- 2. 팀 (team) 테이블 (users 참조)
+-- -- 3. 팀 (team) 테이블 (users 참조)
 -- CREATE TABLE IF NOT EXISTS team (
 --                                     team_id BIGSERIAL PRIMARY KEY,
 --                                     owner_id UUID NOT NULL,
@@ -29,13 +42,14 @@
 --                                         ON DELETE CASCADE
 -- );
 --
--- -- 3. 선수 (player) 테이블 (team 참조)
+-- -- 4. 선수 (player) 테이블 (team 참조)
 -- CREATE TABLE IF NOT EXISTS player (
 --                                       player_id BIGSERIAL PRIMARY KEY,
 --                                       team_id BIGINT NOT NULL,
 --                                       name VARCHAR(50) NOT NULL,
---                                       back_number SMALLINT NOT NULL,
+--                                       back_number INTEGER NOT NULL,
 --                                       position VARCHAR(20) NOT NULL,
+--                                       created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
 --
 --                                       FOREIGN KEY (team_id) REFERENCES team(team_id)
 --                                           ON DELETE CASCADE,
@@ -44,7 +58,7 @@
 --                                       CHECK (back_number >= 1 AND back_number <= 99)
 -- );
 --
--- -- 4. 포메이션 (formation) 테이블 (users, team 참조)
+-- -- 5. 포메이션 (formation) 테이블 (users, team 참조)
 -- CREATE TABLE IF NOT EXISTS formation (
 --                                          formation_id BIGSERIAL PRIMARY KEY,
 --                                          user_id UUID NOT NULL,
@@ -58,14 +72,15 @@
 --                                              ON DELETE CASCADE
 -- );
 --
--- -- 5. 포메이션 선수 배치 (formation_player) 테이블 (formation, player 참조)
+-- -- 6. 포메이션 선수 배치 (formation_player) 테이블 (formation, player 참조)
+-- -- Hibernate의 INTEGER 기대를 충족시키기 위해 BIGINT로 상향 조정
 -- CREATE TABLE IF NOT EXISTS formation_player (
 --                                                 fp_id BIGSERIAL PRIMARY KEY,
 --                                                 formation_id BIGINT NOT NULL,
 --                                                 player_id BIGINT NOT NULL,
---                                                 quarter BIGINT NOT NULL,
---                                                 coord_x BIGINT NOT NULL,
---                                                 coord_y BIGINT NOT NULL,
+--                                                 quarter INTEGER NOT NULL,
+--                                                 coord_x INTEGER NOT NULL,
+--                                                 coord_y INTEGER NOT NULL,
 --
 --                                                 FOREIGN KEY (formation_id) REFERENCES formation(formation_id)
 --                                                     ON DELETE CASCADE,
