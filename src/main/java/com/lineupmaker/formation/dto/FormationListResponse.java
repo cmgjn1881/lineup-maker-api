@@ -3,13 +3,14 @@ package com.lineupmaker.formation.dto;
 import com.lineupmaker.formation.entity.Formation;
 import lombok.Getter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.ZoneOffset;
 
 @Getter
 public class FormationListResponse {
     private final Long formationId;
     private final String name;
-    private final LocalDateTime createdAt;
+    private final Instant createdAt;
 
     /**
      * Formation 엔티티를 받아 DTO를 생성하는 생성자입니다.
@@ -17,7 +18,7 @@ public class FormationListResponse {
     public FormationListResponse(Formation formation) {
         this.formationId = formation.getFormationId();
         this.name = formation.getName();
-        this.createdAt = formation.getCreatedAt();
+        this.createdAt = formation.getCreatedAt().toInstant(ZoneOffset.UTC);
         // 목록 조회에 필요한 최소 필드만 포함
     }
 }

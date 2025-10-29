@@ -3,14 +3,16 @@ package com.lineupmaker.formation.dto;
 import com.lineupmaker.formation.entity.Formation;
 import lombok.Getter;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @Getter
 public class FormationResponse {
     private final Long formationId;
     private final String name;
-    private final LocalDateTime createdAt;
+    private final Instant createdAt;
 
     // Team Information
     private final Long teamId;
@@ -22,7 +24,7 @@ public class FormationResponse {
     public FormationResponse(Formation formation, List<FormationPlayerResponse> placements) {
         this.formationId = formation.getFormationId();
         this.name = formation.getName();
-        this.createdAt = formation.getCreatedAt();
+        this.createdAt = formation.getCreatedAt().toInstant(ZoneOffset.UTC);
 
         this.teamId = formation.getTeam().getTeamId();
         this.teamName = formation.getTeam().getName();
