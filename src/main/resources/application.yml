@@ -35,7 +35,7 @@ spring:
 
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: ${SPRING_DATASOURCE_URL}?prepareThreshold=0
+    url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
     hikari:
@@ -44,6 +44,8 @@ spring:
       connection-timeout: 30000
       idle-timeout: 300000
       max-lifetime: 900000
+      data-source-properties:
+        prepareThreshold: 0
 
   data:
     redis:
