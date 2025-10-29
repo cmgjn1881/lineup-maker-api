@@ -5,8 +5,6 @@ import com.lineupmaker.user.entity.Users;
 import com.lineupmaker.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -62,23 +60,18 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Access Token 갱신", description = "Refresh Token을 사용하여 새로운 Access Token을 발급받습니다.")
+    @Operation(summary = "토큰 갱신 (Access & Refresh)", description = "유효한 Refresh Token을 사용하여 새로운 Access Token과 Refresh Token을 모두 재발급받습니다.")
     @PostMapping("/refresh")
-    public ResponseEntity<String> refresh(
-            @Parameter(description = "만료된 Access Token (선택 사항)", in = ParameterIn.HEADER, schema = @Schema(type = "string"))
-            @RequestHeader(value = "X-Access-Token", required = false) String oldAccessToken,
-            @Parameter(description = "Access Token 갱신용 Refresh Token", required = true, in = ParameterIn.HEADER, schema = @Schema(type = "string"))
-            @RequestHeader("X-Refresh-Token") String refreshToken) {
-
-        String newAccessToken = userService.refreshAccessToken(refreshToken, oldAccessToken);
-        return ResponseEntity.ok(newAccessToken);
+    public ResponseEntity<TokenRefreshResponse> refresh(@RequestBody TokenRefreshRequest request) {
+        TokenRefreshResponse response = userService.refreshAccessToken(request.getRefreshToken());
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "로그아웃")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
-            @Parameter(description = "로그아웃할 사용자의 Access Token", required = true, in = ParameterIn.HEADER, schema = @Schema(type = "string", format = "JWT"))
+            @Parameter(description = "로그아웃할 사용자의 Access Token", required = true)
             @RequestHeader("Authorization") String authorizationHeader) {
 
         if (StringUtils.hasText(authorizationHeader) && authorizationHeader.startsWith("Bearer ")) {

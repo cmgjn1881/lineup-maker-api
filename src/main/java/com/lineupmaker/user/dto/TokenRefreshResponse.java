@@ -1,15 +1,13 @@
 package com.lineupmaker.user.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
-@Setter
+@Builder
+@AllArgsConstructor
 public class TokenRefreshResponse {
-
     private String accessToken;
-
-    public TokenRefreshResponse(String accessToken) {
-        this.accessToken = accessToken;
-    }
+    private String refreshToken;
 }

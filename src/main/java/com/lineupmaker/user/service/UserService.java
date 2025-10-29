@@ -1,9 +1,6 @@
 package com.lineupmaker.user.service;
 
-import com.lineupmaker.user.dto.LoginRequest;
-import com.lineupmaker.user.dto.LoginResponse;
-import com.lineupmaker.user.dto.SignUpRequest;
-import com.lineupmaker.user.dto.SocialLoginRequest;
+import com.lineupmaker.user.dto.*;
 import com.lineupmaker.user.entity.RefreshToken;
 import com.lineupmaker.user.entity.Users;
 import com.lineupmaker.user.jwt.JwtTokenProvider;
@@ -59,7 +56,6 @@ public class UserService {
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        // ✨ [수정] ACTIVE 상태의 사용자만 로그인 허용
         Users user = userRepository.findByEmailAndStatus(request.getEmail(), "ACTIVE")
                 .orElseThrow(() -> new IllegalArgumentException("이메일을 찾을 수 없거나 비활성화된 계정입니다."));
 
@@ -79,7 +75,6 @@ public class UserService {
         KakaoApiService.KakaoUserInfo kakaoUserInfo = kakaoApiService.getUserInfo(request.getAccessToken());
         String providerId = kakaoUserInfo.getId();
 
-        // ✨ [수정] 모든 상태의 사용자를 찾아, 탈퇴 상태이면 활성화
         Users user = userRepository.findByProviderAndProviderId("kakao", providerId)
                 .map(existingUser -> {
                     if ("WITHDRAWN".equals(existingUser.getStatus())) {
@@ -126,7 +121,7 @@ public class UserService {
     }
 
     @Transactional
-    public String refreshAccessToken(String refreshTokenValue, String oldAccessToken) {
+    public TokenRefreshResponse refreshAccessToken(String refreshTokenValue) {
         if (!tokenProvider.validateToken(refreshTokenValue)) {
             throw new IllegalArgumentException("유효하지 않거나 만료된 Refresh Token입니다.");
         }
@@ -140,15 +135,17 @@ public class UserService {
             throw new IllegalArgumentException("토큰 값이 일치하지 않습니다. (탈취 의심)");
         }
 
-        if (StringUtils.hasText(oldAccessToken)) {
-            Long remainingTime = tokenProvider.getRemainingExpirationTime(oldAccessToken);
-            if (remainingTime > 0) {
-                redisTemplate.opsForValue().set("blacklist:" + oldAccessToken, userId.toString(), remainingTime, TimeUnit.MILLISECONDS);
-            }
-        }
+        // 새로운 Access Token과 Refresh Token 생성
+        String newAccessToken = tokenProvider.createToken(userId.toString(), "USER");
+        String newRefreshToken = tokenProvider.createRefreshToken(userId.toString());
 
-        Users user = findById(userId);
-        return tokenProvider.createToken(user.getUserId().toString(), "USER");
+        // 새로 생성된 Refresh Token을 DB에 저장 (덮어쓰기)
+        saveRefreshToken(userId, newRefreshToken);
+
+        return TokenRefreshResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .build();
     }
 
     @Transactional
@@ -171,12 +168,11 @@ public class UserService {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
 
-        // 카카오 사용자인 경우
         if ("kakao".equals(user.getProvider())) {
             if (user.getProviderId() != null) {
                 kakaoApiService.unlinkUserWithAdminKey(user.getProviderId());
             }
-        } else { // 일반 사용자인 경우
+        } else { 
             if (user.getPassword() != null && !passwordEncoder.matches(password, user.getPassword())) {
                 throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
             }
@@ -187,7 +183,6 @@ public class UserService {
     }
 
     public Users findById(UUID userId) {
-        // ✨ [수정] 일반적으로 사용자를 찾을 때는 ACTIVE 상태인 사용자만 조회
         return userRepository.findActiveById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("활성화된 사용자를 찾을 수 없습니다: " + userId));
     }
