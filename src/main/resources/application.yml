@@ -12,6 +12,11 @@ kakao:
     key: ${KAKAO_ADMIN_KEY}
 
 spring:
+  # 지연 초기화 설정
+  # 애플리케이션 시작 시 DB 커넥션 풀을 생성하지 않고, 첫 요청 시 생성하도록 변경
+  # Render + Supabase 무료 플랜의 배포 시점 커넥션 한도 초과 문제를 회피하기 위함
+  main:
+    lazy-initialization: true
   profiles:
     active: dev # 기본 프로필을 dev로 설정
   jackson:
