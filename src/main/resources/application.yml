@@ -60,6 +60,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+    # DB 종류를 명시적으로 설정하여 시작 시 불필요한 메타데이터 조회를 생략
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
 
 app:
   base-url: https://lineup-maker-api.onrender.com
