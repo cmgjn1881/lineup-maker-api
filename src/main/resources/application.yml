@@ -12,7 +12,7 @@ kakao:
     key: ${KAKAO_ADMIN_KEY}
 
 spring:
-  # 지연 초기화 설정
+  # [최종 해결책] 지연 초기화 설정
   # 애플리케이션 시작 시 DB 커넥션 풀을 생성하지 않고, 첫 요청 시 생성하도록 변경
   # Render + Supabase 무료 플랜의 배포 시점 커넥션 한도 초과 문제를 회피하기 위함
   main:
@@ -64,7 +64,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     # DB 종류를 명시적으로 설정하여 시작 시 불필요한 메타데이터 조회를 생략
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
