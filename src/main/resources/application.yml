@@ -61,9 +61,13 @@ spring:
     redis:
       host: ${SPRING_REDIS_HOST}
       port: ${SPRING_REDIS_PORT}
+      password: ${SPRING_REDIS_PASSWORD}
+      ssl:
+        enabled: ${SPRING_REDIS_SSL_ENABLED}
 
   jpa:
     hibernate:
+      # [최종 해결책] 시작 시 스키마 검증을 하지 않도록 변경하여 DB 연결 시도 자체를 방지
       ddl-auto: none
     # DB 종류를 명시적으로 설정하여 시작 시 불필요한 메타데이터 조회를 생략
     database-platform: org.hibernate.dialect.PostgreSQLDialect
