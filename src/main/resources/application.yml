@@ -53,7 +53,7 @@ spring:
       minimum-idle: 1
       connection-timeout: 30000
       idle-timeout: 300000
-      max-lifetime: 900000
+      max-lifetime: 540000
       data-source-properties:
         prepareThreshold: 0
 
