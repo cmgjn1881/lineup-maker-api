@@ -10,4 +10,7 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
 
     // 특정 owerId를 가진 모든 팀 목록을 조회하는 메서드
     List<Team> findByOwnerUserId(UUID ownerId);
+
+    // 특정 ownerId를 가진 팀의 개수를 조회하는 메서드
+    long countByOwnerUserId(UUID ownerId);
 }

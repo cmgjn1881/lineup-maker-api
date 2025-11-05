@@ -20,11 +20,19 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class TeamService {
 
+    private static final int MAX_TEAMS_PER_USER = 3;
+
     private final TeamRepository teamRepository;
     private final UserRepository userRepository; // User 정보 조회를 위해 필요
 
     @Transactional
     public Team createTeam(TeamCreateRequest request, UUID ownerId) {
+
+        // [추가] 팀 생성 개수 제한 확인
+        long currentTeamCount = teamRepository.countByOwnerUserId(ownerId);
+        if (currentTeamCount >= MAX_TEAMS_PER_USER) {
+            throw new IllegalStateException("팀은 최대 " + MAX_TEAMS_PER_USER + "개까지 생성할 수 있습니다.");
+        }
 
         // 1. ownerId를 사용하여 Users 엔티티를 조회 (유효성 및 매핑을 위해 필수)
         Users owner = userRepository.findById(ownerId)

@@ -18,6 +18,8 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class PlayerService {
 
+    private static final int MAX_PLAYERS_PER_TEAM = 30;
+
     private final PlayerRepository playerRepository;
     private final TeamRepository teamRepository;
 
@@ -34,6 +36,12 @@ public class PlayerService {
         // 2. [핵심 보안 검증] 요청한 사용자가 팀의 소유자인지 확인
         if (!team.getOwner().getUserId().equals(ownerId)) {
             throw new IllegalArgumentException("이 팀에 선수를 추가할 권한이 없습니다. (팀 소유자만 가능)");
+        }
+
+        // [추가] 선수 생성 개수 제한 확인
+        long currentPlayerCount = playerRepository.countByTeamTeamId(teamId);
+        if (currentPlayerCount >= MAX_PLAYERS_PER_TEAM) {
+            throw new IllegalStateException("선수는 팀당 최대 " + MAX_PLAYERS_PER_TEAM + "명까지 생성할 수 있습니다.");
         }
 
         // 등번호 중복 검사 (새로 등록할 등번호가 이미 사용 중인지 확인)

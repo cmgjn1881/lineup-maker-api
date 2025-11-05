@@ -27,6 +27,8 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class FormationService {
 
+    private static final int MAX_FORMATIONS_PER_TEAM = 32;
+
     private final FormationRepository formationRepository;
     private final FormationPlayerRepository placementRepository;
     private final TeamRepository teamRepository;
@@ -53,6 +55,12 @@ public class FormationService {
         // [핵심 보안 검증] 팀 소유자만 포메이션 생성 가능
         if (!team.getOwner().getUserId().equals(currentUserId)) {
             throw new IllegalArgumentException("이 팀에 대한 포메이션을 생성할 권한이 없습니다.");
+        }
+
+        // [추가] 포메이션 생성 개수 제한 확인
+        long currentFormationCount = formationRepository.countByTeamTeamId(request.getTeamId());
+        if (currentFormationCount >= MAX_FORMATIONS_PER_TEAM) {
+            throw new IllegalStateException("포메이션은 팀당 최대 " + MAX_FORMATIONS_PER_TEAM + "개까지 생성할 수 있습니다.");
         }
 
         // 2. Formation 엔티티 생성 및 저장
