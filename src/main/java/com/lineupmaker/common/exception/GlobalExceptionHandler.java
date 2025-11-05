@@ -43,4 +43,19 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST) // 400
                 .body(response); // 🔑 ErrorResponse DTO 반환
     }
+
+    /**
+     * [추가] 비즈니스 규칙 위반 예외 처리 (생성 개수 제한 등)
+     * @param ex IllegalStateException
+     * @return 400 Bad Request
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalStateException(IllegalStateException ex) {
+        // "팀은 최대 3개까지..." 와 같은 비즈니스 규칙 위반 시 발생하는 예외를 처리합니다.
+        // 401 Unauthorized 대신 400 Bad Request를 반환하여 클라이언트의 무한 루프를 방지합니다.
+        ErrorResponse response = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(response);
+    }
 }
