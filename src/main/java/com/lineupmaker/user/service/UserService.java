@@ -66,20 +66,16 @@ public class UserService {
         return createAndSaveTokens(user);
     }
 
-    // 1. @Transactional 제거: 외부 API 호출을 트랜잭션 밖으로 분리
     public LoginResponse socialLogin(SocialLoginRequest request) {
         if (!"kakao".equalsIgnoreCase(request.getProvider())) {
             throw new IllegalArgumentException("지원하지 않는 소셜 로그인입니다.");
         }
 
-        // 2. 외부 API 호출을 트랜잭션 시작 전에 수행
         KakaoApiService.KakaoUserInfo kakaoUserInfo = kakaoApiService.getUserInfo(request.getAccessToken());
 
-        // 3. DB 작업만 트랜잭션 메소드로 위임
         return findOrCreateUserAndLogin(kakaoUserInfo);
     }
 
-    // socialLogin의 DB 작업을 처리하는 새로운 트랜잭션 메소드
     @Transactional
     public LoginResponse findOrCreateUserAndLogin(KakaoApiService.KakaoUserInfo kakaoUserInfo) {
         String providerId = kakaoUserInfo.getId();
@@ -93,12 +89,14 @@ public class UserService {
                 })
                 .orElseGet(() -> {
                     Users newUser = Users.builder()
+                            .userId(UUID.randomUUID()) // [수정] UUID를 애플리케이션에서 직접 생성
                             .username(kakaoUserInfo.getNickname())
                             .provider("kakao")
                             .providerId(providerId)
                             .isVerified(true)
                             .build();
-                    return userRepository.save(newUser);
+                    // [수정] saveAndFlush를 사용하여 즉시 DB에 반영하고, 반환된 객체는 ID를 포함하도록 보장
+                    return userRepository.saveAndFlush(newUser);
                 });
 
         return createAndSaveTokens(user);
@@ -115,7 +113,7 @@ public class UserService {
         return LoginResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshTokenValue)
-                .userId(UUID.fromString(userIdStr))
+                .userId(user.getUserId())
                 .username(user.getUsername())
                 .build();
     }
@@ -145,11 +143,9 @@ public class UserService {
             throw new IllegalArgumentException("토큰 값이 일치하지 않습니다. (탈취 의심)");
         }
 
-        // 새로운 Access Token과 Refresh Token 생성
         String newAccessToken = tokenProvider.createToken(userId.toString(), "USER");
         String newRefreshToken = tokenProvider.createRefreshToken(userId.toString());
 
-        // 새로 생성된 Refresh Token을 DB에 저장 (덮어쓰기)
         saveRefreshToken(userId, newRefreshToken);
 
         return TokenRefreshResponse.builder()
@@ -173,37 +169,31 @@ public class UserService {
         }
     }
 
-    // 1. @Transactional 제거: 여러 트랜잭션과 외부 API 호출을 오케스트레이션
     public void withdraw(UUID userId, String password) {
-        // 2. 첫 번째 트랜잭션: 사용자 정보 조회 및 검증, 외부 API 호출에 필요한 정보 반환
         String providerId = prepareWithdrawal(userId, password);
 
-        // 3. 외부 API 호출 (트랜잭션 밖에서 수행)
         if (providerId != null) {
             kakaoApiService.unlinkUserWithAdminKey(providerId);
         }
 
-        // 4. 두 번째 트랜잭션: 실제 DB 회원 탈퇴 처리
         completeWithdrawal(userId);
     }
 
-    // 회원 탈퇴 준비를 위한 트랜잭션 메소드 (읽기 전용)
     @Transactional(readOnly = true)
     public String prepareWithdrawal(UUID userId, String password) {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
 
         if ("kakao".equals(user.getProvider())) {
-            return user.getProviderId(); // 카카오 연동 해제를 위해 providerId 반환
+            return user.getProviderId();
         } else {
             if (user.getPassword() != null && !passwordEncoder.matches(password, user.getPassword())) {
                 throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
             }
-            return null; // 로컬 계정은 반환할 ID 없음
+            return null;
         }
     }
 
-    // 실제 회원 탈퇴 처리를 위한 트랜잭션 메소드
     @Transactional
     public void completeWithdrawal(UUID userId) {
         Users user = userRepository.findById(userId)
