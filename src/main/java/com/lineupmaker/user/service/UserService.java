@@ -43,13 +43,14 @@ public class UserService {
                 },
                 () -> {
                     Users newUser = Users.builder()
+                            .userId(UUID.randomUUID())
                             .email(request.getEmail())
                             .password(passwordEncoder.encode(request.getPassword()))
                             .username(request.getUsername())
                             .provider("local")
                             .isVerified(true)
                             .build();
-                    userRepository.save(newUser);
+                    userRepository.saveAndFlush(newUser);
                 }
         );
     }
@@ -66,6 +67,7 @@ public class UserService {
         return createAndSaveTokens(user);
     }
 
+    @Transactional // [수정] 이 메소드를 쓰기 가능한 트랜잭션으로 만듭니다.
     public LoginResponse socialLogin(SocialLoginRequest request) {
         if (!"kakao".equalsIgnoreCase(request.getProvider())) {
             throw new IllegalArgumentException("지원하지 않는 소셜 로그인입니다.");
@@ -76,8 +78,8 @@ public class UserService {
         return findOrCreateUserAndLogin(kakaoUserInfo);
     }
 
-    @Transactional
-    public LoginResponse findOrCreateUserAndLogin(KakaoApiService.KakaoUserInfo kakaoUserInfo) {
+    // 이 메소드는 socialLogin 트랜잭션에 참여하게 됩니다.
+    private LoginResponse findOrCreateUserAndLogin(KakaoApiService.KakaoUserInfo kakaoUserInfo) {
         String providerId = kakaoUserInfo.getId();
 
         Users user = userRepository.findByProviderAndProviderId("kakao", providerId)
@@ -89,13 +91,12 @@ public class UserService {
                 })
                 .orElseGet(() -> {
                     Users newUser = Users.builder()
-                            .userId(UUID.randomUUID()) // [수정] UUID를 애플리케이션에서 직접 생성
+                            .userId(UUID.randomUUID())
                             .username(kakaoUserInfo.getNickname())
                             .provider("kakao")
                             .providerId(providerId)
                             .isVerified(true)
                             .build();
-                    // [수정] saveAndFlush를 사용하여 즉시 DB에 반영하고, 반환된 객체는 ID를 포함하도록 보장
                     return userRepository.saveAndFlush(newUser);
                 });
 
