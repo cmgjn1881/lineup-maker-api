@@ -1,14 +1,14 @@
-# 개발 환경용 설정 (상세 로그)
+# 로컬 개발 환경용 설정
+app:
+  base-url: http://localhost:8080
 
 spring:
   jpa:
     properties:
       hibernate:
-        format_sql: true
-        show_sql: true
+        format_sql: true # SQL 로그를 예쁘게 포맷팅
+        show_sql: true   # 실행되는 SQL 로그를 콘솔에 출력
 
 logging:
   level:
-    org.hibernate.SQL: info
-    org.hibernate.type.descriptor.sql.BasicExtractor: info
-    org.springframework.security: info
+    org.hibernate.type.descriptor.sql: trace # SQL 파라미터 값까지 로그로 확인

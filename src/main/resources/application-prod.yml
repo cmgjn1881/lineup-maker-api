@@ -1,4 +1,10 @@
-# 운영 환경용 설정 (로그 최소화)
+# 운영 환경(prod)용 설정
+server:
+  address: 0.0.0.0 # Render 환경에서 외부 요청을 받을 수 있도록 설정
+
+app:
+  base-url: https://lineup-maker-api.onrender.com # 운영 환경의 base-url
+
 spring:
   jpa:
     properties:
@@ -9,5 +15,5 @@ spring:
 logging:
   level:
     root: warn
-    com.lineupmaker: info # 우리 애플리케이션 패키지는 info 레벨 유지
+    com.lineupmaker: info
     org.springframework.security: warn

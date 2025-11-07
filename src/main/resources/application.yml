@@ -1,3 +1,5 @@
+# 모든 환경(dev, prod)에 공통으로 적용되는 기본 설정
+
 jwt:
   secret: ${JWT_SECRET_KEY}
   expiration: ${JWT_EXPIRATION_SECONDS}
@@ -6,7 +8,7 @@ jwt:
 server:
   port: ${PORT:8080}
   forward-headers-strategy: NATIVE
-  address: 0.0.0.0
+  # server.address는 각 프로필(dev, prod)에서 정의
 
 kakao:
   admin:
@@ -15,8 +17,6 @@ kakao:
 spring:
   main:
     lazy-initialization: true
-  profiles:
-    active: dev
   jackson:
     serialization:
       WRITE_DATES_AS_TIMESTAMPS: false
@@ -69,8 +69,5 @@ spring:
     open-in-view: false
 
 app:
-  base-url: https://lineup-maker-api.onrender.com
-  #base-url: http://localhost:8080
-  oauth2:
-    # ✨ [배포 설정] 실제 배포된 프론트엔드 주소로 변경 (Vercel 주소)
+  # app.base-url은 각 프로필(dev, prod)에서 정의
   health-check-key: ${HEALTH_SECRET_TOKEN}
