@@ -52,8 +52,8 @@ spring:
       maximum-pool-size: 3
       minimum-idle: 1
       connection-timeout: 30000
-      idle-timeout: 300000
-      max-lifetime: 540000
+      idle-timeout: 180000
+      max-lifetime: 300000
       data-source-properties:
         prepareThreshold: 0
 
@@ -67,10 +67,11 @@ spring:
 
   jpa:
     hibernate:
-      # [최종 해결책] 시작 시 스키마 검증을 하지 않도록 변경하여 DB 연결 시도 자체를 방지
+      # 시작 시 스키마 검증을 하지 않도록 변경하여 DB 연결 시도 자체를 방지
       ddl-auto: none
     # DB 종류를 명시적으로 설정하여 시작 시 불필요한 메타데이터 조회를 생략
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
 
 app:
   base-url: https://lineup-maker-api.onrender.com
