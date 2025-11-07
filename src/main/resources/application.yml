@@ -6,19 +6,17 @@ jwt:
 server:
   port: ${PORT:8080}
   forward-headers-strategy: NATIVE
+  address: 0.0.0.0
 
 kakao:
   admin:
     key: ${KAKAO_ADMIN_KEY}
 
 spring:
-  # [최종 해결책] 지연 초기화 설정
-  # 애플리케이션 시작 시 DB 커넥션 풀을 생성하지 않고, 첫 요청 시 생성하도록 변경
-  # Render + Supabase 무료 플랜의 배포 시점 커넥션 한도 초과 문제를 회피하기 위함
   main:
     lazy-initialization: true
   profiles:
-    active: dev # 기본 프로필을 dev로 설정
+    active: dev
   jackson:
     serialization:
       WRITE_DATES_AS_TIMESTAMPS: false
@@ -67,10 +65,7 @@ spring:
 
   jpa:
     hibernate:
-      # 시작 시 스키마 검증을 하지 않도록 변경하여 DB 연결 시도 자체를 방지
       ddl-auto: none
-    # DB 종류를 명시적으로 설정하여 시작 시 불필요한 메타데이터 조회를 생략
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
     open-in-view: false
 
 app:
