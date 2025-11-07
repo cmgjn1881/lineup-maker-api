@@ -3,17 +3,21 @@ package com.lineupmaker.player.repository;
 import com.lineupmaker.player.entity.Player;
 import com.lineupmaker.team.entity.Team;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface PlayerRepository extends JpaRepository<Player, Long> {
 
-    List<Player> findByTeamTeamId(Long teamId);
+    @Query("SELECT p FROM Player p JOIN FETCH p.team WHERE p.team.teamId = :teamId")
+    List<Player> findByTeamTeamIdWithTeam(@Param("teamId") Long teamId);
 
-    // 🔑 특정 팀에서 특정 등번호를 가진 선수를 찾는 메서드
     Optional<Player> findByTeamAndBackNumber(Team team, int backNumber);
 
-    // 특정 팀에 속한 선수의 수를 세는 메서드
     long countByTeamTeamId(Long teamId);
+
+    @Query("SELECT p FROM Player p JOIN FETCH p.team WHERE p.playerId = :playerId")
+    Optional<Player> findByIdWithTeam(@Param("playerId") Long playerId);
 }
