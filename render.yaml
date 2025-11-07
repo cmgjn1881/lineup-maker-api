@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: lineup-maker-api
+    env: java
+    plan: free
+    healthCheck:
+      path: /internal-healthz
+      initialDelaySeconds: 300
+    envVars:
+      - key: JAVA_TOOL_OPTIONS
+        value: -Xmx224m -XX:MaxMetaspaceSize=128m
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - fromGroup: lineup-maker-secrets
