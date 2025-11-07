@@ -40,12 +40,16 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/favicon.ico",
+                                // [수정] Render 내부 헬스 체크 경로 추가
+                                "/internal-healthz",
+                                // 외부 헬스 체크 경로
+                                "/healthz",
+                                // 인증 관련 경로
                                 "/api/auth/signup",
                                 "/api/auth/login",
                                 "/api/auth/social-login",
                                 "/api/auth/refresh",
                                 "/api/auth/logout",
-                                "/healthz",
                                 // Swagger UI v3
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
