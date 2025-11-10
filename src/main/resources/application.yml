@@ -67,6 +67,12 @@ spring:
     hibernate:
       ddl-auto: none
     open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 20
+          order_inserts: true
+          order_updates: true
 
 app:
   # app.base-url은 각 프로필(dev, prod)에서 정의
