@@ -7,10 +7,12 @@ import com.lineupmaker.team.repository.TeamRepository;
 import com.lineupmaker.user.entity.Users;
 import com.lineupmaker.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.UUID;
@@ -44,8 +46,16 @@ public class TeamService {
         return teamRepository.save(newTeam);
     }
 
-    public List<Team> getTeamsByOwner(UUID ownerId) {
-        return teamRepository.findByOwnerUserIdWithUser(ownerId);
+    public List<Team> getTeamsByOwner(UUID ownerId, String sort) {
+        Sort sorting = Sort.unsorted();
+        if (StringUtils.hasText(sort)) {
+            if ("createdAt".equalsIgnoreCase(sort)) {
+                sorting = Sort.by(Sort.Direction.DESC, "createdAt");
+            } else if ("name".equalsIgnoreCase(sort)) {
+                sorting = Sort.by(Sort.Direction.ASC, "name");
+            }
+        }
+        return teamRepository.findByOwner_UserId(ownerId, sorting);
     }
 
     @Transactional

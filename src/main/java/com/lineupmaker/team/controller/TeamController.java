@@ -43,9 +43,13 @@ public class TeamController {
     @Operation(summary = "내 팀 목록 조회", description = "현재 로그인한 사용자가 소유한 모든 팀 목록을 조회합니다.")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping
-    public ResponseEntity<List<TeamResponse>> getMyTeams(@Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<List<TeamResponse>> getMyTeams(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "정렬 기준 (예: 'createdAt' - 최신순, 'name' - 이름순)")
+            @RequestParam(required = false) String sort) {
+
         UUID ownerId = UUID.fromString(userDetails.getUsername());
-        List<Team> teams = teamService.getTeamsByOwner(ownerId);
+        List<Team> teams = teamService.getTeamsByOwner(ownerId, sort);
         List<TeamResponse> responses = teams.stream()
                 .map(TeamResponse::new)
                 .collect(Collectors.toList());

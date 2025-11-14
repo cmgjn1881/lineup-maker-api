@@ -1,6 +1,8 @@
 package com.lineupmaker.team.repository;
 
 import com.lineupmaker.team.entity.Team;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,4 +20,7 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
 
     @Query("SELECT t FROM Team t JOIN FETCH t.owner WHERE t.teamId = :teamId")
     Optional<Team> findByIdWithUser(@Param("teamId") Long teamId);
+
+    @EntityGraph(attributePaths = {"owner"})
+    List<Team> findByOwner_UserId(UUID userId, Sort sort);
 }
