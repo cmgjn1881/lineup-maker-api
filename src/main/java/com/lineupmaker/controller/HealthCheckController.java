@@ -6,7 +6,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,12 +19,6 @@ public class HealthCheckController {
 
     @Value("${app.health-check-key}")
     private String expectedHealthCheckKey;
-
-    private final RedisTemplate<String, Object> redisTemplate;
-
-    public HealthCheckController(RedisTemplate<String, Object> redisTemplate) {
-        this.redisTemplate = redisTemplate;
-    }
 
     @Operation(summary = "외부 헬스 체크 (슬립 방지용)", description = "서버의 동작 여부를 확인합니다. (토큰 필요)")
     @GetMapping("/healthz")
