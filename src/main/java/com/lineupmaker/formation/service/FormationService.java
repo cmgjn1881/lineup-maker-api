@@ -15,8 +15,10 @@ import com.lineupmaker.user.entity.Users;
 import com.lineupmaker.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.UUID;
@@ -144,8 +146,16 @@ public class FormationService {
         return existingFormation;
     }
 
-    public List<Formation> getFormationsByOwner(UUID userId, Long teamId) {
-        return formationRepository.findByUser_UserIdAndTeam_TeamId(userId, teamId);
+    public List<Formation> getFormationsByOwner(UUID userId, Long teamId, String sort) {
+        Sort sorting = Sort.unsorted();
+        if (StringUtils.hasText(sort)) {
+            if ("createdAt".equalsIgnoreCase(sort)) {
+                sorting = Sort.by(Sort.Direction.DESC, "createdAt");
+            } else if ("name".equalsIgnoreCase(sort)) {
+                sorting = Sort.by(Sort.Direction.ASC, "name");
+            }
+        }
+        return formationRepository.findByUser_UserIdAndTeam_TeamId(userId, teamId, sorting);
     }
 
     @Transactional

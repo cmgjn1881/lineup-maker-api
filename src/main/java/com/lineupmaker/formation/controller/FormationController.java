@@ -49,10 +49,12 @@ public class FormationController {
     @GetMapping
     public ResponseEntity<List<FormationListResponse>> getFormations(
             @Parameter(description = "포메이션을 조회할 팀의 ID") @RequestParam Long teamId,
-            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails) {
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "정렬 기준 (예: 'createdAt' - 최신순, 'name' - 이름순)")
+            @RequestParam(required = false) String sort) {
 
         UUID ownerId = UUID.fromString(userDetails.getUsername());
-        List<Formation> formations = formationService.getFormationsByOwner(ownerId, teamId);
+        List<Formation> formations = formationService.getFormationsByOwner(ownerId, teamId, sort);
         List<FormationListResponse> responses = formations.stream()
                 .map(FormationListResponse::new)
                 .collect(Collectors.toList());
