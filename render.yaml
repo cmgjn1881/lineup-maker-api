@@ -8,7 +8,7 @@ services:
       initialDelaySeconds: 300
     envVars:
       - key: JAVA_TOOL_OPTIONS
-        value: -Xmx224m -XX:MaxMetaspaceSize=128m
+        value: -Xmx300m -XX:MaxMetaspaceSize=128m
       - key: SPRING_PROFILES_ACTIVE
         value: prod
       - fromGroup: lineup-maker-secrets
