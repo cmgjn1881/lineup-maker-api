@@ -4,9 +4,10 @@ import com.lineupmaker.formation.entity.Formation;
 import lombok.Getter;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Getter
 public class FormationResponse {
@@ -21,6 +22,9 @@ public class FormationResponse {
     // Placement List
     private final List<FormationPlayerResponse> placements;
 
+    // Referee Information
+    private final Map<Integer, String> referees;
+
     public FormationResponse(Formation formation, List<FormationPlayerResponse> placements) {
         this.formationId = formation.getFormationId();
         this.name = formation.getName();
@@ -30,5 +34,11 @@ public class FormationResponse {
         this.teamName = formation.getTeam().getName();
 
         this.placements = placements;
+
+        this.referees = formation.getQuarterReferees().stream()
+                .collect(Collectors.toMap(
+                        qr -> qr.getQuarter(),
+                        qr -> qr.getRefereeName()
+                ));
     }
 }

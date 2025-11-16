@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -34,6 +36,9 @@ public class Formation {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @OneToMany(mappedBy = "formation", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FormationQuarterReferee> quarterReferees = new ArrayList<>();
 
     @Builder
     public Formation(Users user, Team team, String name) {
