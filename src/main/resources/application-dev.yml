@@ -4,6 +4,8 @@ app:
 
 spring:
   jpa:
+    hibernate:
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true # SQL 로그를 예쁘게 포맷팅

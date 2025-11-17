@@ -5,13 +5,14 @@
 -- --
 -- -- -- 테이블 삭제 (참조 무결성을 위해 역순으로 삭제하거나 CASCADE 사용)
 -- -- DROP TABLE IF EXISTS formation_player CASCADE;
+-- -- DROP TABLE IF EXISTS formation_quarter_referee CASCADE;
 -- -- DROP TABLE IF EXISTS formation CASCADE;
 -- -- DROP TABLE IF EXISTS player CASCADE;
 -- -- DROP TABLE IF EXISTS team CASCADE;
 -- -- DROP TABLE IF EXISTS users CASCADE;
 --
 --
--- -- 2. 사용자 (users) 테이블
+-- 2. 사용자 (users) 테이블
 -- CREATE TABLE IF NOT EXISTS users (
 --
 --                                      user_id UUID PRIMARY KEY,
@@ -88,4 +89,19 @@
 --                                                     ON DELETE CASCADE,
 --
 --                                                 UNIQUE (formation_id, player_id, quarter)
+-- );
+--
+-- -- 7. 포메이션 쿼터별 심판 (formation_quarter_referee) 테이블 (formation 참조)
+-- CREATE TABLE IF NOT EXISTS formation_quarter_referee (
+--                                                          id BIGSERIAL PRIMARY KEY,
+--                                                          formation_id BIGINT NOT NULL,
+--                                                          quarter INTEGER NOT NULL,
+--                                                          referee_name VARCHAR(255) NOT NULL,
+--                                                          created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+--
+--                                                          FOREIGN KEY (formation_id) REFERENCES formation(formation_id)
+--                                                              ON DELETE CASCADE,
+--
+--     -- 한 포메이션의 각 쿼터에는 한 명의 심판만 배정될 수 있도록 UNIQUE 제약 조건 추가
+--                                                          UNIQUE (formation_id, quarter)
 -- );
