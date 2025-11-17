@@ -1,5 +1,6 @@
 package com.lineupmaker.formation.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.lineupmaker.formation.entity.Formation;
 import lombok.Getter;
 
@@ -20,6 +21,8 @@ public class FormationResponse {
     private final String teamName;
 
     // Placement List
+    @Schema(description = "쿼터별 심판 정보. Key는 쿼터(1~4), Value는 심판 이름입니다.",
+            example = "{\"1\": \"홍길동\", \"2\": \"김철수\", \"3\": \"홍길동\", \"4\": \"이영희\"}")
     private final List<FormationPlayerResponse> placements;
 
     // Referee Information
