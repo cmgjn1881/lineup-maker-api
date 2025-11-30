@@ -87,12 +87,16 @@ public class UserService {
                     if ("WITHDRAWN".equals(existingUser.getStatus())) {
                         existingUser.activate();
                     }
+                    // 카카오에서 받아온 최신 정보로 업데이트
+                    existingUser.updateEmail(kakaoUserInfo.getEmail());
+                    existingUser.updateUsername(kakaoUserInfo.getNickname());
                     return existingUser;
                 })
                 .orElseGet(() -> {
                     Users newUser = Users.builder()
                             .userId(UUID.randomUUID())
                             .username(kakaoUserInfo.getNickname())
+                            .email(kakaoUserInfo.getEmail()) // 이메일 정보 추가
                             .provider("kakao")
                             .providerId(providerId)
                             .isVerified(true)
@@ -116,6 +120,7 @@ public class UserService {
                 .refreshToken(refreshTokenValue)
                 .userId(user.getUserId())
                 .username(user.getUsername())
+                .email(user.getEmail()) // email 정보 추가
                 .build();
     }
 

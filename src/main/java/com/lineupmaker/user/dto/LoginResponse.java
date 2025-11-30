@@ -14,12 +14,13 @@ public class LoginResponse {
     private String refreshToken;
     private UUID userId;
     private String username;
-    // 필요한 경우 다른 사용자 정보 추가 가능
+    private String email; // email 필드 추가
 
-    public LoginResponse(String accessToken, String refreshToken, UUID userId, String username) {
+    public LoginResponse(String accessToken, String refreshToken, UUID userId, String username, String email) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.userId = userId;
         this.username = username;
+        this.email = email;
     }
 }

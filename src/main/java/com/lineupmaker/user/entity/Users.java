@@ -65,6 +65,10 @@ public class Users {
         this.password = newPassword;
     }
 
+    public void updateEmail(String newEmail) {
+        this.email = newEmail;
+    }
+
     public void completeVerification() {
         this.isVerified = true;
     }

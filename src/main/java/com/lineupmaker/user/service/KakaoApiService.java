@@ -84,6 +84,9 @@ public class KakaoApiService {
             @JsonProperty("profile")
             private Profile profile;
 
+            @JsonProperty("email")
+            private String email;
+
             @Getter
             public static class Profile {
                 @JsonProperty("nickname")
@@ -92,6 +95,13 @@ public class KakaoApiService {
         }
         public String getNickname() {
             return kakaoAccount.getProfile().getNickname();
+        }
+
+        public String getEmail() {
+            if (kakaoAccount == null) {
+                return null;
+            }
+            return kakaoAccount.getEmail();
         }
     }
 }
